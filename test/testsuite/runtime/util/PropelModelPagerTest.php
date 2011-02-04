@@ -8,7 +8,7 @@
  * @license    MIT License
  */
 
-require_once dirname(__FILE__) . '/../../../tools/helpers/bookstore/BookstoreEmptyTestBase.php';
+require_once 'tools/helpers/bookstore/BookstoreEmptyTestBase.php';
 
 /**
  * Test the utility class PropelPager
@@ -27,7 +27,7 @@ class PropelModelPagerTest extends BookstoreEmptyTestBase
 		BookQuery::create()->deleteAll($con);
 		$books = new PropelObjectCollection();
 		$books->setModel('Book');
-		for ($i=0; $i < $nb; $i++) {
+		for ($i=0; $i < $nb; $i++) { 
 			$b = new Book();
 			$b->setTitle('Book' . $i);
 			$books[]= $b;
@@ -83,7 +83,7 @@ class PropelModelPagerTest extends BookstoreEmptyTestBase
 		$pager = $this->getPager(4, 3);
 		$this->assertEquals(1, count($pager->getResults()), 'getResults() returns the results of the last page when called on nonexistent pages');
 	}
-	
+
 	public function testGetResultsRespectsFormatter()
 	{
 		$this->createBooks(5);
@@ -157,85 +157,4 @@ class PropelModelPagerTest extends BookstoreEmptyTestBase
 		$pager = $this->getPager(4, 2);
 		$this->assertTrue($pager->isLastPage(), 'isLastPage() returns true on the last page');
 	}
-	
-	public function testIsFirstOnFirstPage()
-	{
-		$this->createBooks(5);
-		$pager = $this->getPager(3, 1);
-		foreach ($pager as $index => $book) {
-			if ($index == 0) {
-				$this->assertTrue($pager->isFirst());
-			} else {
-				$this->assertFalse($pager->isFirst());
-			}
-		}
-	}
-
-	public function testIsFirstOnNonFirstPage()
-	{
-		$this->createBooks(5);
-		$pager = $this->getPager(3, 2);
-		foreach ($pager as $index => $book) {
-			if ($index == 0) {
-				$this->assertTrue($pager->isFirst());
-			} else {
-				$this->assertFalse($pager->isFirst());
-			}
-		}
-	}
-
-	public function testIsLastOnNonLastPage()
-	{
-		$this->createBooks(5);
-		$pager = $this->getPager(3, 1);
-		foreach ($pager as $index => $book) {
-			if ($index == 2) {
-				$this->assertTrue($pager->isLast());
-			} else {
-				$this->assertFalse($pager->isLast());
-			}
-		}
-	}
-
-	public function testIsLastOnLastPage()
-	{
-		$this->createBooks(5);
-		$pager = $this->getPager(3, 2);
-		foreach ($pager as $index => $book) {
-			if ($index == 1) {
-				$this->assertTrue($pager->isLast());
-			} else {
-				$this->assertFalse($pager->isLast());
-			}
-		}
-	}
-	
-	public function testIsEmptyIsTrueOnEmptyPagers()
-	{
-		$pager = $this->getPager(4, 1);
-		$this->assertTrue($pager->isEmpty());
-	}
-	
-	public function testIsEmptyIsFalseOnNonEmptyPagers()
-	{
-		$this->createBooks(1);
-		$pager = $this->getPager(4, 1);
-		$this->assertFalse($pager->isEmpty());
-	}
-	
-	public function testIsOddAndIsEven()
-	{
-		$this->createBooks(5);
-		$pager = $this->getPager(4, 1);
-		foreach ($pager as $index => $book) {
-			if ($index % 2) {
-				$this->assertTrue($pager->isOdd());
-				$this->assertFalse($pager->isEven());
-			} else {
-				$this->assertFalse($pager->isOdd());
-				$this->assertTrue($pager->isEven());
-			}
-		}
-	}
-
 }

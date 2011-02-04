@@ -8,7 +8,7 @@
  * @license    MIT License
  */
 
-require_once dirname(__FILE__) . '/../../../tools/helpers/bookstore/BookstoreTestBase.php';
+require_once 'tools/helpers/bookstore/BookstoreTestBase.php';
 
 /**
  * Test class for RelatedMap::getSymmetricalRelation.
@@ -18,7 +18,7 @@ require_once dirname(__FILE__) . '/../../../tools/helpers/bookstore/BookstoreTes
  * @package    runtime.map
  */
 class RelatedMapSymmetricalTest extends BookstoreTestBase 
-{
+{ 
   protected $databaseMap;
 
   protected function setUp()

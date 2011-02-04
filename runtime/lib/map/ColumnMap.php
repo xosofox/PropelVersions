@@ -20,7 +20,7 @@
  *
  * @author     Hans Lellelid <hans@xmpl.org> (Propel)
  * @author     John D. McNally <jmcnally@collab.net> (Torque)
- * @version    $Revision: 2090 $
+ * @version    $Revision: 1612 $
  * @package    propel.runtime.map
  */
 class ColumnMap
@@ -58,9 +58,6 @@ class ColumnMap
 
   // The validators for this column
   protected $validators = array();
-
-  // The allowed values for an ENUM column
-  protected $valueSet = array();
 
   /**
    * Constructor.
@@ -114,7 +111,7 @@ class ColumnMap
   }
 
   /**
-   * Set the php name of this column.
+   * Set the php anme of this column.
    *
    * @param      string $phpName A string representing the PHP name.
    * @return     void
@@ -422,36 +419,6 @@ class ColumnMap
   }
   
   /**
-   * Set the valueSet of this column (only valid for ENUM columns).
-   *
-   * @param      array $values A list of allowed values
-   */
-  public function setValueSet($values)
-  {
-    $this->valueSet = $values;
-  }
-  
-  /**
-   * Get the valueSet of this column (only valid for ENUM columns).
-   *
-   * @return     array A list of allowed values
-   */
-  public function getValueSet()
-  {
-    return $this->valueSet;
-  }
-  
-  public function isInValueSet($value)
-  {
-    return in_array($value, $this->valueSet);
-  }
-  
-  public function getValueSetKey($value)
-  {
-    return array_search($value, $this->valueSet);
-  }
-  
-  /**
    * Performs DB-specific ignore case, but only if the column type necessitates it.
    * @param      string $str The expression we want to apply the ignore case formatting to (e.g. the column name).
    * @param      DBAdapter $db
@@ -475,7 +442,7 @@ class ColumnMap
    */
   public static function normalizeName($name)
   {
-    if (false !== ($pos = strrpos($name, '.'))) {
+    if (false !== ($pos = strpos($name, '.'))) {
       $name = substr($name, $pos + 1);
     }
     $name = strtoupper($name);

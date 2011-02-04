@@ -18,6 +18,8 @@ class ModelJoin extends Join
 {
 	protected $relationMap;
 	protected $tableMap;
+	protected $leftTableAlias;
+	protected $relationAlias;
 	protected $previousJoin;
 	
 	public function setRelationMap(RelationMap $relationMap, $leftTableAlias = null, $relationAlias = null)
@@ -26,12 +28,13 @@ class ModelJoin extends Join
 		$rightCols = $relationMap->getRightColumns();
 		$nbColumns = $relationMap->countColumnMappings();
 		for ($i=0; $i < $nbColumns; $i++) {
-			$this->addExplicitCondition(
-				$leftCols[$i]->getTableName(), $leftCols[$i]->getName(), $leftTableAlias,
-				$rightCols[$i]->getTableName(), $rightCols[$i]->getName(), $relationAlias,
-				Criteria::EQUAL);
+			$leftColName  = ($leftTableAlias ? $leftTableAlias  : $leftCols[$i]->getTableName()) . '.' . $leftCols[$i]->getName();
+			$rightColName = ($relationAlias ? $relationAlias : $rightCols[$i]->getTableName()) . '.' . $rightCols[$i]->getName();
+			$this->addCondition($leftColName, $rightColName, Criteria::EQUAL);
 		}
 		$this->relationMap = $relationMap;
+		$this->leftTableAlias = $leftTableAlias;
+		$this->relationAlias = $relationAlias;
 		
 		return $this;
 	}
@@ -86,20 +89,40 @@ class ModelJoin extends Join
 		return null === $this->previousJoin;
 	}
 
+	public function setLeftTableAlias($leftTableAlias)
+	{
+		$this->leftTableAlias = $leftTableAlias;
+		
+		return $this;
+	}
+	
+	public function getLeftTableAlias()
+	{
+		return $this->leftTableAlias;
+	}
+	
+	public function hasLeftTableAlias()
+	{
+		return null !== $this->leftTableAlias;
+	}
+
 	public function setRelationAlias($relationAlias)
 	{
-		return $this->setRightTableAlias($relationAlias);
+		$this->relationAlias = $relationAlias;
+		
+		return $this;
 	}
 	
 	public function getRelationAlias()
 	{
-		return $this->getRightTableAlias();
+		return $this->relationAlias;
 	}
 	
 	public function hasRelationAlias()
 	{
-		return $this->hasRightTableAlias();
+		return null !== $this->relationAlias;
 	}
+
 	/**
 	 * This method returns the last related, but already hydrated object up until this join
 	 * Starting from $startObject and continuously calling the getters to get 
@@ -128,7 +151,7 @@ class ModelJoin extends Join
 		return parent::equals($join)
 			&& $this->relationMap == $join->getRelationMap()
 			&& $this->previousJoin == $join->getPreviousJoin()
-			&& $this->rightTableAlias == $join->getRightTableAlias();
+			&& $this->relationAlias == $join->getRelationAlias();
 	}
 	
 	public function __toString()
@@ -137,7 +160,7 @@ class ModelJoin extends Join
 			. ' tableMap: ' . ($this->tableMap ? get_class($this->tableMap) : 'null')
 			. ' relationMap: ' . $this->relationMap->getName()
 			. ' previousJoin: ' . ($this->previousJoin ? '(' . $this->previousJoin . ')' : 'null')
-			. ' relationAlias: ' . $this->rightTableAlias;
+			. ' relationAlias: ' . $this->relationAlias;
 	}
 }
  

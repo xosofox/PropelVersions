@@ -1,7 +1,7 @@
 <?php
 
 /*
- *	$Id: TimestampableBehaviorTest.php 2168 2011-01-20 15:07:57Z francois $
+ *	$Id: TimestampableBehaviorTest.php 2035 2010-11-14 17:54:27Z francois $
  * This file is part of the Propel package.
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -9,13 +9,13 @@
  * @license    MIT License
  */
 
-require_once dirname(__FILE__) . '/../../../tools/helpers/bookstore/BookstoreTestBase.php';
+require_once 'tools/helpers/bookstore/BookstoreTestBase.php';
 
 /**
  * Tests for TimestampableBehavior class
  *
  * @author     François Zaninotto
- * @version    $Revision: 2168 $
+ * @version    $Revision: 2035 $
  * @package    generator.behavior
  */
 class TimestampableBehaviorTest extends BookstoreTestBase 
@@ -131,7 +131,7 @@ class TimestampableBehaviorTest extends BookstoreTestBase
 		Table2Query::create()->deleteAll();
 		$ts = new PropelObjectCollection();
 		$ts->setModel('Table2');
-		for ($i=0; $i < 10; $i++) {
+		for ($i=0; $i < 10; $i++) { 
 			$t = new Table2();
 			$t->setTitle('UpdatedAt' . $i);
 			/* additional -30 in case the check is done in the same second (which we can't guarantee, so no assert(8 ...) below).*/
@@ -146,7 +146,7 @@ class TimestampableBehaviorTest extends BookstoreTestBase
 		Table2Query::create()->deleteAll();
 		$ts = new PropelObjectCollection();
 		$ts->setModel('Table2');
-		for ($i=0; $i < 10; $i++) {
+		for ($i=0; $i < 10; $i++) { 
 			$t = new Table2();
 			$t->setTitle('CreatedAt' . $i);
 			$t->setCreatedAt(time() - $i * 24 * 60 * 60 - 30);
