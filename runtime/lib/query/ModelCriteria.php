@@ -22,7 +22,7 @@
  * @method     ModelCriteria innerJoin($relation) Adds a INNER JOIN clause to the query
  *
  * @author     François Zaninotto
- * @version    $Revision: 2090 $
+ * @version    $Revision: 2037 $
  * @package    propel.runtime.query
  */
 class ModelCriteria extends Criteria
@@ -48,7 +48,7 @@ class ModelCriteria extends Criteria
 	protected $with = array();
 	protected $isWithOneToMany = false;
 	protected $previousJoin = null; // this is introduced to prevent useQuery->join from going wrong
-	protected $isKeepQuery = true; // whether to clone the current object before termination methods
+	protected $isKeepQuery = false; // whether to clone the current object before termination methods
 	protected $select = null;  // this is for the select method
 
 	/**
@@ -433,10 +433,10 @@ class ModelCriteria extends Criteria
 				$this->addGroupByColumn($column->getFullyQualifiedName());
 			}
 		}
-		
+
 		return $this;
 	}
-	
+
 	/**
 	 * Adds a DISTINCT clause to the query
 	 * Alias for Criteria::setDistinct()
@@ -654,68 +654,6 @@ class ModelCriteria extends Criteria
 
 		return $this;
 	}
-	
-	/**
-	 * Add another condition to an already added join
-	 * @example
-	 * <code>
-	 * $query->join('Book.Author');
-	 * $query->addJoinCondition('Author', 'Book.Title LIKE ?', 'foo%');
-	 * </code>
-	 *
-	 * @param string $name The relation name or alias on which the join was created
-	 * @param string $clause SQL clause, may contain column and table phpNames
-	 * @param mixed  $value An optional value to bind to the clause
-	 * @param string $operator The operator to use to add the condition. Defaults to 'AND'
-	 *
-	 * @return ModelCriteria The current object, for fluid interface
-	 */
-	public function addJoinCondition($name, $clause, $value = null, $operator = null)
-	{
-		if (!isset($this->joins[$name])) {
-			throw new PropelException(sprintf('Adding a condition to a nonexistent join, %s. Try calling join() first.', $name));
-		}
-		$join = $this->joins[$name];
-		if (!$join->getJoinCondition() instanceof Criterion) {
-			$join->buildJoinCondition($this);
-		}
-		$criterion = $this->getCriterionForClause($clause, $value);
-		$method = $operator === Criteria::LOGICAL_OR ? 'addOr' : 'addAnd';
-		$join->getJoinCondition()->$method($criterion);
-		
-		return $this;
-	}
-	
-	/**
-	 * Replace the condition of an already added join
-	 * @example
-	 * <code>
-	 * $query->join('Book.Author');
-	 * $query->condition('cond1', 'Book.AuthorId = Author.Id')
-	 * $query->condition('cond2', 'Book.Title LIKE ?', 'War%')
-	 * $query->combine(array('cond1', 'cond2'), 'and', 'cond3')
-	 * $query->setJoinCondition('Author', 'cond3');
-	 * </code>
-	 *
-	 * @param string $name The relation name or alias on which the join was created
-	 * @param mixed $condition A Criterion object, or a condition name
-	 *
-	 * @return ModelCriteria The current object, for fluid interface
-	 */
-	public function setJoinCondition($name, $condition)
-	{
-		if (!isset($this->joins[$name])) {
-			throw new PropelException(sprintf('Setting a condition to a nonexistent join, %s. Try calling join() first.', $name));
-		}
-		if ($condition instanceof Criterion) {
-			$this->getJoin($name)->setJoinCondition($condition);
-		} elseif (isset($this->namedCriterions[$condition])) {
-			$this->getJoin($name)->setJoinCondition($this->namedCriterions[$condition]);
-		} else {
-			throw new PropelException(sprintf('Cannot add condition %s on join %s. setJoinCondition() expects either a Criterion, or a condition added by way of condition()', $condition, $name));
-		}
-		return $this;
-	}
 
 	/**
 	 * Add a join object to the Criteria
@@ -800,7 +738,7 @@ class ModelCriteria extends Criteria
 		$this->addRelationSelectColumns($relation);
 
 		// list the join for later hydration in the formatter
-		$this->with[$relation] = new ModelWith($join);
+		$this->with[$relation] = $join;
 
 		return $this;
 	}
@@ -1205,7 +1143,7 @@ class ModelCriteria extends Criteria
 			$params = array();
 			$sql = BasePeer::createSelectSql($this, $params);
 			$stmt = $con->prepare($sql);
-			$db->bindValues($stmt, $params, $dbMap);
+			BasePeer::populateStmtValues($stmt, $params, $dbMap, $db);
 			$stmt->execute();
 		} catch (Exception $e) {
 			if (isset($stmt)) {
@@ -1378,7 +1316,7 @@ class ModelCriteria extends Criteria
 				$sql = BasePeer::createSelectSql($this, $params);
 			}
 			$stmt = $con->prepare($sql);
-			$db->bindValues($stmt, $params, $dbMap);
+			BasePeer::populateStmtValues($stmt, $params, $dbMap, $db);
 			$stmt->execute();
 		} catch (PropelException $e) {
 			if ($stmt) {
@@ -1656,14 +1594,14 @@ class ModelCriteria extends Criteria
 	 * Creates a Criterion object based on a list of existing condition names and a comparator
 	 *
 	 * @param      array $conditions The list of condition names, e.g. array('cond1', 'cond2')
-	 * @param      string  $operator An operator, Criteria::LOGICAL_AND (default) or Criteria::LOGICAL_OR
+	 * @param      string  $comparator A comparator, Criteria::LOGICAL_AND (default) or Criteria::LOGICAL_OR
 	 *
 	 * @return     Criterion a Criterion or ModelCriterion object
 	 */
-	protected function getCriterionForConditions($conditions, $operator = null)
+	protected function getCriterionForConditions($conditions, $comparator = null)
 	{
-		$operator = (null === $operator) ? Criteria::LOGICAL_AND : $operator;
-		$this->combine($conditions, $operator, 'propel_temp_name');
+		$comparator = (null === $comparator) ? Criteria::LOGICAL_AND : $comparator;
+		$this->combine($conditions, $comparator, 'propel_temp_name');
 		$criterion = $this->namedCriterions['propel_temp_name'];
 		unset($this->namedCriterions['propel_temp_name']);
 
@@ -1694,9 +1632,7 @@ class ModelCriteria extends Criteria
 			} else {
 				$operator = ModelCriteria::MODEL_CLAUSE;
 			}
-			$colMap = $this->replacedColumns[0];
-			$value = $this->convertValueForColumn($value, $colMap);
-			$criterion = new ModelCriterion($this, $colMap, $value, $operator, $clause);
+			$criterion = new ModelCriterion($this, $this->replacedColumns[0], $value, $operator, $clause);
 			if ($this->currentAlias != '') {
 				$criterion->setTable($this->currentAlias);
 			}
@@ -1708,34 +1644,6 @@ class ModelCriteria extends Criteria
 			$criterion = new Criterion($this, null, $clause, Criteria::CUSTOM);
 		}
 		return $criterion;
-	}
-	
-	/**
-	 * Converts value for some column types
-	 *
-	 * @param  mixed     $value  The value to convert
-	 * @param  ColumnMap $colMap The ColumnMap object
-	 * @return mixed             The converted value
-	 */
-	protected function convertValueForColumn($value, ColumnMap $colMap)
-	{
-		if ($colMap->getType() == 'OBJECT' && is_object($value)) {
-			if (is_array($value)) {
-				$value = array_map('serialize', $value);
-			} else {
-				$value = serialize($value);
-			}
-		} elseif ($colMap->getType() == 'ARRAY' && is_array($value)) {
-			$value = '| ' . implode(' | ', $value) . ' |';
-		} elseif ($colMap->getType() == 'ENUM') {
-			if (is_array($value)) {
-				$value = array_map(array($colMap, 'getValueSetKey'), $value);
-			} else {
-				$value = $colMap->getValueSetKey($value);
-			}
-		}
-		
-		return $value;
 	}
 
 	/**
@@ -1915,7 +1823,7 @@ class ModelCriteria extends Criteria
 	public function getAliasedColName($colName)
 	{
 		if ($this->useAliasInSQL) {
-			return $this->modelAlias . substr($colName, strrpos($colName, '.'));
+			return $this->modelAlias . substr($colName, strpos($colName, '.'));
 		} else {
 			return $colName;
 		}
@@ -1925,16 +1833,16 @@ class ModelCriteria extends Criteria
 	 * Overrides Criteria::add() to force the use of a true table alias if it exists
 	 *
 	 * @see        Criteria::add()
-	 * @param      string $column The colName of column to run the condition on (e.g. BookPeer::ID)
+	 * @param      string $column The colName of column to run the comparison on (e.g. BookPeer::ID)
 	 * @param      mixed $value
-	 * @param      string $operator A String, like Criteria::EQUAL.
+	 * @param      string $comparison A String.
 	 *
 	 * @return     ModelCriteria A modified Criteria object.
 	 */
-	public function addUsingAlias($p1, $value = null, $operator = null)
+	public function addUsingAlias($p1, $value = null, $comparison = null)
 	{
 		$key = $this->getAliasedColName($p1);
-		return $this->containsKey($key) ? $this->addAnd($key, $value, $operator) : $this->add($key, $value, $operator);
+		return $this->containsKey($key) ? $this->addAnd($key, $value, $comparison) : $this->add($key, $value, $comparison);
 	}
 
 	/**

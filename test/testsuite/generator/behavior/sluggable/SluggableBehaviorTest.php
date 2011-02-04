@@ -9,13 +9,13 @@
  * @license    MIT License
  */
 
-require_once dirname(__FILE__) . '/../../../../tools/helpers/bookstore/BookstoreTestBase.php';
+require_once 'tools/helpers/bookstore/BookstoreTestBase.php';
 
 /**
  * Tests for SluggableBehavior class
  *
  * @author     François Zaninotto
- * @version    $Revision: 1834 $
+ * @version    $Revision: 1629 $
  * @package    generator.behavior.sluggable
  */
 class SluggableBehaviorTest extends BookstoreTestBase

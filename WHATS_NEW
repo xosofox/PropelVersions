@@ -1,636 +1,807 @@
-= What's new in Propel 1.6? =
+= What's new in Propel 1.5? =
 
 [[PageOutline]]
 
-Propel 1.6 is a new backwards compatible iteration of the Propel 1.x branch. As usual, don't forget to rebuild your model once you upgrade to this new version.
+First and foremost, don't be frightened by the long list of new features that follows. Propel 1.5 is completely backwards compatible with Propel 1.4 and 1.3, so there is no hidden cost to benefit from these features. If you didn't do it already, upgrade the propel libraries, rebuild your model, and you're done - your application can now use the Propel 1.5 features.
 
-== Migrations ==
+== New Query API ==
 
-How do you manage changes to your database as the Model evolves and the schema changes? Calling the `sql` and `insert-sql` task each time the schema is updated has one dreadful drawback: it erases all the data in the database.
+This is the killer feature of Propel 1.5. It will transform the painful task of writing Criteria queries into a fun moment.
 
-Starting with Propel 1.6, the `sql`-`insert-sql` sequence is replaced by the `diff`-`migrate` sequence:
+=== Model Queries ===
+
+Along Model and Peer classes, Propel 1.5 now generates one Query class for each table. These Query classes inherit from Criteria, but have additional abilities since the Propel generator has a deep knowledge of your schema. That means that Propel 1.5 advises that you use ModelQueries instead of raw Criteria.
+
+Model queries have smart filter methods for each column, and termination methods on their own. That means that instead of writing:
 
 {{{
-> propel-gen diff
-
-[propel-sql-diff] Reading databases structure...
-[propel-sql-diff] 1 tables imported from databases.
-[propel-sql-diff] Loading XML schema files...
-[propel-sql-diff] 2 tables found in 1 schema file.
-[propel-sql-diff] Comparing models...
-[propel-sql-diff] Structure of database was modified: 1 added table, 1 modified table
-[propel-sql-diff] "PropelMigration_1286484196.php" file successfully created in /path/to/project/build/migrations
-[propel-sql-diff]   Please review the generated SQL statements, and add data migration code if necessary.
-[propel-sql-diff]   Once the migration class is valid, call the "migrate" task to execute it.
-
-> propel-gen migrate
-
-[propel-migration] Executing migration PropelMigration_1286484196 up
-[propel-migration] 4 of 4 SQL statements executed successfully on datasource "bookstore"
-[propel-migration] Migration complete. No further migration to execute.
+#!php
+<?php
+$c = new Criteria();
+$c->add(BookPeer::TITLE, 'War And Peace');
+$book = BookPeer::doSelectOne($c);
 }}}
 
-`diff` compares the schema to the database, and generates a class with all the required `ALTER TABLE` and `CREATE TABLE` statements to update the database structure. This migration class then feeds the `migrate` task, which connects to the database and executes the migrations - with no data loss.
+You can write:
 
-Migrations are a fantastic way to work on complex projects with always evolving models ; they are also a great tool for team work, since migration classes can be shared among all developers. That way, when a developer adds a table to the model, a second developer just needs to run the related migration to have the table added to the table.
+{{{
+#!php
+<?php
+$q = new BookQuery();
+$q->filterByTitle('War And Peace');
+$book = $q->findOne();
+}}}
 
-Propel migrations can also be executed incrementally - the new `up` and `down` tasks are there for that. And when you're lost in migration, call the `status` task to chack which migrations were already executed, and which ones should be executed to update the database structure.
+In addition, each Model Query class benefits from a factory method called `create()`, which returns a new instance of the query class. And the filter methods return the current query object. So it's even easier to write the previous query as follows:
 
-The Propel guide offers [wiki:Documentation/1.6/Migrations an entire chapter on Migrations] to explain how to use them and how they work.
+{{{
+#!php
+<?php
+$book = BookQuery::create()
+  ->filterByTitle('War And Peace');
+  ->findOne();
+}}}
 
-Migrations only work on MySQL and PostgreSQL for now. On other platforms, you should continue to use `sql` and `insert-sql`.
+The termination methods are `find()`, `findOne()`, `count()`, `paginate()`, `update()`, and `delete()`. They all accept a connection object as last parameter.
 
-== New Behaviors ==
+Remember that a Model Query IS a Criteria. So your Propel 1.4 code snippets still work:
 
-Propel 1.6 ships with more core behaviors than ever.
+{{{
+#!php
+<?php
+$book = BookQuery::create()
+  ->addJoin(BookPeer::AUTHOR_ID, AuthorPeer::ID);
+  ->add(AuthorPeer::LAST_NAME, 'Tolstoi')
+  ->addAscendingOrderByColumn(BookPeer::TITLE)
+  ->findOne();
+}}}
 
-=== Versionable behavior ===
+But you will soon see that it's faster to use the generated methods of the Model Query classes:
 
-Once enabled on a table, the `versionable` behavior will store a copy of the !ActiveRecord object in a separate table each time it is saved. This allows to keep track of the changes made on an object, whether to review modifications, or revert to a previous state.
+{{{
+#!php
+<?php
+$book = BookQuery::create()
+  ->useAuthorQuery();
+    ->filterByLastName('Tolstoi')
+  ->endUse()
+  ->orderByTitle()
+  ->findOne();
+}}}
 
-The classic Wiki example is a good illustration of the utility of the `versionable` behavior:
+That's right, you can embed a query into another; Propel guesses the join to apply from the foreign key declared in your schema.
+
+That makes it very easy to package your own custom model logic into reusable query methods. After a while, your code can easily look like the following:
+
+{{{
+#!php
+<?php
+$books = BookQuery::create()
+  ->filterByPublisher($publisher)
+  ->cheap()
+  ->recent()
+  ->useAuthorQuery();
+    ->stillAlive()
+    ->famous()
+  ->endUse()
+  ->orderByTitle()
+  ->find();
+}}}
+
+The Model Queries can understand `findByXXX()` method calls, where `'XXX'` is the phpName of a column of the model. That answers one of the most common customization need:
+
+{{{
+#!php
+<?php
+$book = BookQuery::create()->findOneByTitle('War And Peace');
+}}}
+
+Eventually, these Query classes will replace the Peer classes; you should place all the code necessary to request or alter Model object in these classes. The Criteria/Peer way of doing queries still work exactly the same as in previous Propel versions, so your existing applications won't suffer from this update.
+
+'''Tip''': Incidentally, if you use an IDE with code completion, you will see that writing a query has never been so easy.
+
+=== Collections And On-Demand Hydration ===
+
+The `find()` method of generated Model Query objects returns a `PropelCollection` object. You can use this object just like an array of model objects, iterate over it using `foreach`, access the objects by key, etc.
+  
+{{{
+#!php
+<?php
+$books = BookQuery::create()
+  ->limit(5)
+  ->find(); // $books is a PropelCollection object
+foreach ($books as $book) {
+  echo $book->getTitle();
+}
+}}}
+
+Propel also returns a `PropelCollection` object instead of an array when you use a getter for a one-to-many relationship:
+
+{{{
+#!php
+<?php
+$books = $author->getBooks(); // $books is a PropelCollection object
+}}}
+
+If your code relies on list of objects being arrays, you will need to update it a little. The `PropelCollection` object provides a method for most common array operations:
+
+{{{
+Array                    | Collection object
+------------------------ | ----------------------------------------- 
+foreach($books as $book) | foreach($books as $book)
+count($books)            | count($books)     or $books->count()
+$books[]= $book          | $books[]= $book   or $books->append($book)
+$books[0]                | $books[0]         or $books->getFirst()
+$books[123]              | $books[123]       or $books->offsetGet(123)
+unset($books[1])         | unset($books[1])  or $books->remove(1)
+empty($books)            | $books->isEmpty()
+in_array($book, $books)  | $books->contains($book)
+array_pop($books)        | $books->pop()
+etc.
+}}}
+
+'''Warning''': `empty($books)` always returns false when using a collection, even on a non-empty one. This is a PHP limitation. Prefer `$books->isEmpty()`, or `count($books)>0`.
+
+'''Tip''': If you can't afford updating your code to support collections instead of arrays, you can still ask Propel to generate 1.4-compatible model objects by overriding the `propel.builder.object.class` setting in your `build.properties`, as follows:
+
+{{{
+#!ini
+propel.builder.object.class = builder.om.PHP5ObjectNoCollectionBuilder
+}}}
+
+The `PropelCollection` class offers even more methods that you will soon use a lot:
+
+{{{
+#!php
+<?php
+$books->getArrayCopy()   // get the array inside the collection
+$books->toArray()        // turn all objects to associative arrays
+$books->getPrimaryKeys() // get an array of the primary keys of all the objects in the collection
+$books->getModel()       // return the model of the collection, e.g. 'Book'
+}}}
+
+Another advantage of using a collection instead of an array is that Propel can hydrate model objects on demand. Using this feature, you'll never fall short of memory again. Available through the `setFormatter()` method of Model Queries, on-demand hydration is very easy to trigger:
+
+{{{
+#!php
+<?php
+$books = BookQuery::create()
+  ->limit(50000)
+  ->setFormatter(ModelCriteria::FORMAT_ON_DEMAND) // just add this line
+  ->find();
+foreach ($books as $book) {
+  echo $book->getTitle();
+}
+}}}
+
+In this example, Propel will hydrate the `Book` objects row by row, after the `foreach` call, and reuse the memory between each iteration. The consequence is that the above code won't use more memory when the query returns 50,000 results than when it returns 5.
+
+`ModelCriteria::FORMAT_ON_DEMAND` is one of the many formatters provided by the new Query objects. You can also get a collection of associative arrays instead of objects, if you don't need any of the logic stored in your model object, by using `ModelCriteria::FORMAT_ARRAY`.
+
+The [wiki:Users/Documentation/1.5/ModelCriteria documentation] describes each formatter, and how to use it.
+
+=== Model Criteria ===
+
+Generated Model Queries inherit from `ModelCriteria`, which extends your good old `Criteria`, and adds a few useful features. Basically, a `ModelCriteria` is a `Criteria` linked to a Model; by using the information stored in the generated TableMaps at runtime, `ModelCriteria` offers powerful methods to simplify the process of writing a query.
+
+For instance, `ModelCriteria::where()` provides similar functionality to `Criteria::add()`, except that its [http://www.php.net/manual/en/pdostatement.bindparam.php PDO-like syntax] removes the burden of Criteria constants for comparators.
+
+{{{
+#!php
+<?php
+$book = BookQuery::create()
+  ->where('Book.Title LIKE ?', 'War And P%')
+  ->findOne();
+}}}
+
+Propel analyzes the clause passed as first argument of `where()` to determine which escaping to use for the value passed as second argument. In the above example, the `Book::TITLE` column is declared as `VARCHAR` in the schema, so Propel will bind the title as a string. 
+
+The `where()` method can also accept more complex clauses. You just need to explicit every column name as `'ModelClassName.ColumnPhpName'`, as follows:
+
+{{{
+#!php
+<?php
+$book = BookQuery::create()
+  ->where('UPPER(Book.Title) LIKE ?', 'WAR AND P%')
+  ->where('(Book.Price * 100) <= ?', 1500)
+  ->findOne();
+}}}
+
+Another great addition of `ModelCriteria` is the `join()` method, which just needs the name of a related model to build a JOIN clause:
+
+{{{
+#!php
+<?php
+$books = BookQuery::create()
+  ->join('Book.Author')
+  ->where('CONCAT(Author.FirstName, " ", Author.LastName) = ?', 'Leo Tolstoi')
+  ->find();
+}}}
+
+`ModelCriteria` has a built-in support for table aliases, which allows to setup a query using two joins on the same table, which was not possible with the `Criteria` object:
+
+{{{
+#!php
+<?php
+$books = BookQuery::create('b') // use 'b' as an alias for 'Book' in the query
+  ->join('b.Author a')          // use 'a' as an alias for 'Author' in the query 
+  ->where('CONCAT(a.FirstName, " ", a.LastName) = ?', 'Leo Tolstoi')
+  ->find();
+}}}
+
+This syntax probably looks familiar, because it is very close to SQL. So you probably won't need long to figure out how to write a complex query with it. The documentation offers [wiki:Users/Documentation/1.5/ModelCriteria an entire chapter] dedicated to the new `ModelCriteria` class. Make sure you read it to see the power of this new query API.
+
+=== Criteria Enhancements ===
+
+Generated queries and ModelQueries are not the only ones to have received a lot of attention in Propel 1.5. The Criteria object itself sees a few improvements, that will ease the writing of queries with complex logic.
+
+`Criteria::addOr()` operates the way you always expected it to. For instance, in Propel 1.4, `addOr()` resulted in a SQL `AND` if called on a column with no other condition:
+
+{{{
+#!php
+<?php
+// addOr() used to work on a column with an existing condition
+$c = new Criteria();
+$c->add(BookPeer::TITLE, '%Leo%', Criteria::LIKE);
+$c->addOr(BookPeer::TITLE, '%Tolstoi%', Criteria::LIKE);
+// translates in SQL as
+// WHERE (book.TITLE LIKE '%Leo%' OR book.TITLE LIKE '%Tolstoi%')
+
+// addOr() used to fail on a column with no existing condition
+$c = new Criteria();
+$c->add(BookPeer::TITLE, '%Leo%', Criteria::LIKE);
+$c->addOr(BookPeer::ISBN, '1234', Criteria::EQUAL);
+// translates in SQL as
+// WHERE book.TITLE LIKE '%Leo%' AND book.ISBN = '1234'
+}}}
+
+This is fixed in Propel 1.5. This means that you don't need to call upon the `Criterion` object for a simple OR clause:
+
+{{{
+#!php
+<?php
+// addOr() now works on a column with no existing condition
+$c = new Criteria();
+$c->add(BookPeer::TITLE, '%Leo%', Criteria::LIKE);
+$c->addOr(BookPeer::ISBN, '1234', Criteria::EQUAL);
+// translates in SQL as
+// WHERE (book.TITLE LIKE '%Leo%' OR book.ISBN = '1234')
+
+// and it's much faster to write than
+$c = new Criteria();
+$c1 = $c->getNewCriterion(BookPeer::TITLE, '%Leo%', Criteria::LIKE);
+$c2 = $c->getNewCriterion(BookPeer::ISBN, '1234', Criteria::EQUAL);
+$c1->addOr($c2);
+$c->add($c1);
+}}}
+
+`add()` and `addOr()` only allow simple logical operations on a single condition. For more complex logic,  Propel 1.4 forced you to use Criterions again. This is no longer the case in Propel 1.5, which provides a new `Criteria::combine()` method. It expects an array of named conditions to be combined, and an operator. Use `Criteria::addCond()` to create a condition, instead of the usual `add()`:
+
+{{{
+#!php
+<?php
+$c = new Criteria();
+$c->addCond('cond1', BookPeer::TITLE, 'Foo', Criteria::EQUAL); // creates a condition named 'cond1'
+$c->addCond('cond2', BookPeer::TITLE, 'Bar', Criteria::EQUAL); // creates a condition named 'cond2'
+$c->combine(array('cond1', 'cond2'), Criteria::LOGICAL_OR);    // combine 'cond1' and 'cond2' with a logical OR
+// translates in SQL as
+// WHERE (book.TITLE = 'Foo' OR book.TITLE = 'Bar');
+}}}
+ 
+`combine()` accepts more than two conditions at a time:
+{{{
+#!php
+<?php
+$c = new Criteria();
+$c->addCond('cond1', BookPeer::TITLE, 'Foo', Criteria::EQUAL);
+$c->addCond('cond2', BookPeer::TITLE, 'Bar', Criteria::EQUAL);
+$c->addCond('cond3', BookPeer::TITLE, 'FooBar', Criteria::EQUAL);
+$c->combine(array('cond1', 'cond2', 'cond3'), Criteria::LOGICAL_OR);
+// translates in SQL as
+// WHERE ((book.TITLE = 'Foo' OR book.TITLE = 'Bar') OR book.TITLE = 'FooBar');
+}}}
+
+`combine()` itself can return a named condition to be combined later. So it allows for any level of logical complexity:
+
+{{{
+#!php
+<?php
+$c = new Criteria();
+
+$c->addCond('cond1', BookPeer::TITLE, 'Foo', Criteria::EQUAL);
+$c->addCond('cond2', BookPeer::TITLE, 'Bar', Criteria::EQUAL);
+$c->combine(array('cond1', 'cond2'), Criteria::LOGICAL_OR, 'cond12');
+
+$c->addCond('cond3', BookPeer::ISBN, '1234', Criteria::EQUAL);
+$c->addCond('cond4', BookPeer::ISBN, '4567', Criteria::EQUAL);
+$c->combine(array('cond3', 'cond4'), Criteria::LOGICAL_OR, 'cond34');
+
+$c->combine(array('cond12', 'cond34'), Criteria::LOGICAL_AND);
+
+// WHERE (book.TITLE = 'Foo' OR book.TITLE = 'Bar') 
+//   AND (book.ISBN = '1234' OR book.ISBN = '4567');
+}}}
+
+The new `combine()` method makes it much easier to handle logically complex criterions. The good news is that if your application code already uses the old Criterion way, it will continue to work with Propel 1.5 as all these changes are backwards compatible.
+
+Of course, since Model Queries extend Criteria, this new feature is available for all your queries, with a slightly different syntax, in order to support column phpNames:
+
+{{{
+#!php
+<?php
+$books = Bookquery::create()
+    ->condition('cond1', 'Book.Title = ?', 'Foo')
+    ->condition('cond2', 'Book.Title = ?', 'Bar')
+  ->combine(array('cond1', 'cond2'), Criteria::LOGICAL_OR, 'cond12')
+    ->condition('cond3', 'Book.ISBN = ?', '1234')
+    ->condition('cond4', 'Book.ISBN = ?', '4567')
+  ->combine(array('cond3', 'cond4'), Criteria::LOGICAL_OR, 'cond34')
+  ->combine(array('cond12', 'cond34'), Criteria::LOGICAL_AND)
+  ->find();
+// WHERE (book.TITLE = 'Foo' OR book.TITLE = 'Bar') 
+//   AND (book.ISBN = '1234' OR book.ISBN = '4567');
+}}}
+
+== Many-to-Many Relationships ==
+
+At last, Propel generates the necessary methods to retrieve related objects in a many-to-many relationship. Since this feature is often needed, many developers already wrote these methods themselves. To avoid method collision, the generation of many-to-many getters is therefore optional.
+
+All you have to do is to add the `isCrossRef` attribute to the cross reference table, and rebuild your model. For instance, if a `User` has many `Groups`, and the `Group` has many `Users`, the many-to-many relationship is materialized by a `user_group` cross reference table:
 
 {{{
 #!xml
-<table name="wiki_page">
-  <column name="id" required="true" primaryKey="true" autoIncrement="true" type="INTEGER" />
-  <column name="title" type="VARCHAR" required="true" />
-  <column name="body" type="LONGVARCHAR" />
-  <behavior name="versionable" />
+<table name="user">
+  <column name="id" type="INTEGER" primaryKey="true" autoIncrement="true"/>
+  <column name="name" type="VARCHAR" size="32"/>
+</table>
+
+<table name="group">
+  <column name="id" type="INTEGER" primaryKey="true" autoIncrement="true"/>
+  <column name="name" type="VARCHAR" size="32"/>
+</table>
+
+<table name="user_group" isCrossRef="true">
+  <column name="user_id" type="INTEGER" primaryKey="true"/>
+  <column name="group_id" type="INTEGER" primaryKey="true"/>
+  <foreign-key foreignTable="user">
+    <reference local="user_id" foreign="id"/>
+  </foreign-key>
+  <foreign-key foreignTable="group">
+    <reference local="group_id" foreign="id"/>
+  </foreign-key>
 </table>
 }}}
 
-After rebuild, the `WikiPage` model has versioning abilities:
+Then, both end of the relationship see the other end through a one-to-many relationship. That means that you can deal with related objects just like you normally do, without ever creating instances of the cross reference object:
 
 {{{
 #!php
 <?php
-$page = new WikiPage();
+// create and relate objects as if they shared a one-to-many relationship
+$user = new User();
+$user->setName('John Doe');
+$group = new Group();
+$group->setName('Anonymous');
+// relate $user and $group
+$user->addGroup($group);
+// save the $user object, the $group object, and a new instance of the UserGroup class
+$user->save();
 
-// automatic version increment
-$page->setTitle('Propel');
-$page->setBody('Propel is a CRM built in PHP');
-$page->save(); 
-echo $page->getVersion(); // 1
-$page->setBody('Propel is an ORM built in PHP5');
-$page->save();
-echo $page->getVersion(); // 2
+// retrieve objects as if they shared a one-to-many relationship
+$groups = $user->getGroups();
 
-// reverting to a previous version
-$page->toVersion(1);
-echo $page->getBody(); // 'Propel is a CRM built in PHP'
-// saving a previous version creates a new one
-$page->save();
-echo $page->getVersion(); // 3
-
-// checking differences between versions
-print_r($page->compareVersions(1, 2));
-// array(
-//   'Body' => array(1 => 'Propel is a CRM built in PHP', 2 => 'Propel is an ORM built in PHP5'),
-// );
-
-// deleting an object also deletes all its versions
-$page->delete();
+// the model query also features a smart filter method for the relation
+$groups = GroupPeer::create()
+  ->filterByUser($user)
+  ->find();
 }}}
 
-The `versionable` behavior offers audit log functionality, so you can track who made a modification, when, and why:
+The syntax should be no surprise, since it's the same as the one for one-to-many relationships. Find more details about many-to-many relationships in the [wiki:Users/Documentation/1.5/Relationships relationships documentation].
 
-{{{
-#!php
-<?php
-$page = new WikiPage();
-$page->setTitle('PEAR');
-$page->setBody('PEAR is a framework and distribution system for reusable PHP components');
-$page->setVersionCreatedBy('John Doe');
-$page->setVersionComment('First draft');
-$page->save();
-// do more modifications...
+== New Behaviors ==
 
-// list all modifications
-foreach ($page->getAllVersions() as $pageVersion) {
-  echo sprintf("'%s', Version %d, updated by %s on %s (%s)\n",
-    $pageVersion->getTitle(),
-    $pageVersion->getVersion(),
-    $pageVersion->getVersionCreatedBy(),
-    $pageVersion->getVersionCreatedAt(),
-    $pageVersion->getVersionComment(),
-  );
-}
-// 'PEAR', Version 1, updated by John Doe on 2010-12-21 22:53:02 (First draft)
-// 'PEAR', Version 2, updated by ...
-}}}
+The new behavior system, introduced in Propel 1.4, starts to unleash its true power with this release. Three new behaviors implement the most common customizations of object models: `nested_sets`, `sluggable`, and `sortable`.
 
-If it was just for that, the `versionable` behavior would already be awesome. Versioning is a very common feature, and there is no doubt that this behavior will replace lots of boilerplate code. Consider the fact that it's very configurable, [wiki:Documentation/1.6/Behaviors/versionable fully documented], and unit tested, and there is no reason to develop your own versioning layer.
+=== Nested Set Behavior ===
 
-But there is more. The `versionable` behavior also works on relationships. If the `WikiPage` has one `Category`, and if the `Category` model also uses the `versionable` behavior, then each time a `WikiPage` is saved, it saves the version of the related `Category` it is related to, and it is able to restore it:
+Using the `treeMode` attribute in a schema, you could turn a Propel model into a hierarchical data store starting with Propel 1.3. This method is now deprecated in favor of a new `nested_set` behavior, that does eactly the same thing, but in a more extensible and effective way.
 
-{{{
-#!php
-<?php
-$category = new Category();
-$category->setName('Libraries');
-$page = new WikiPage();
-$page->setTitle('PEAR');
-$page->setBody('PEAR is a framework and distribution system for reusable PHP components');
-$page->setCategory($category);
-$page->save(); // version 1
+The main difference between the two implementations is performance. On the first levels of a large tree, the Propel 1.3 implementation of Nested sets used to consume a very large amount of memory and CPU to retrieve the siblings or the children of a given node. This is no longer true with the new behavior.
 
-$page->setTitle('PEAR - PHP Extension and Application Repository');
-$page->save(); // version 2
+This performance boost comes at a small price: you must add a new "level" column to your nested set models, and let the behavior update this column for the whole tree.
 
-$category->setName('PHP Libraries');
-$page->save(); // version 3
-
-$page->toVersion(1);
-echo $page->getTitle(); // 'PEAR'
-echo $page->getCategory()->getName(); // 'Libraries'
-$page->toVersion(3);
-echo $page->getTitle(); // 'PEAR - PHP Extension and Application Repository'
-echo $page->getCategory()->getName(); // 'PHP Libraries'
-}}}
-
-Now the versioning is not limited to a single class anymore. You can even design a fully versionable '''application''' - it all depends on your imagination.
-
-=== I18n behavior ===
-
-The `i18n` behavior provides support for internationalization on the model. Using this behavior, the text columns of an !ActiveRecord object can have several translations.
-
-This is useful in multilingual applications, such as an e-commerce website selling home appliances across the world. This website should keep the name and description of each item separated from the other details, and keep one version for each supported language.
-
-Starting with Propel 1.6, this is possible by adding a simple `<behavior>` tag to the table that needs internationalization:
+For instance, if you used nested sets to keep a list of categories, the schema used to look like:
 
 {{{
 #!xml
-<table name="item">
-  <column name="id" required="true" primaryKey="true" autoIncrement="true" type="INTEGER" />
-  <column name="name" type="VARCHAR" required="true" />
-  <column name="description" type="LONGVARCHAR" />
-  <column name="price" type="FLOAT" />
-  <column name="is_in_store" type="BOOLEAN" />
-  <behavior name="i18n">
-    <parameter name="i18n_columns" value="name, description" />
+<table name="category" treeMode="NestedSet">
+  <column name="id" primaryKey="true" autoIncrement="true" type="INTEGER"/>
+  <column name="left" nestedSetLeftKey="true" type="INTEGER"/>
+  <column name="right" nestedSetLeftKey="true" type="INTEGER"/>
+  <column name="name" required="true" type="VARCHAR" size="10" />
+</table>
+}}}
+
+The upgrade path is then pretty straightforward:
+
+1 - Update the schema, by removing the `treeMode` and `nestedSet` attributes and adding the `nested_set` behavior and the `tree_level` column:
+
+{{{
+#!xml
+<table name="category">
+  <column name="id" primaryKey="true" autoIncrement="true" type="INTEGER"/>
+  <column name="left" type="INTEGER"/>
+  <column name="right" type="INTEGER"/>
+  <column name="tree_level" type="INTEGER"/>
+  <column name="name" required="true" type="VARCHAR" size="10" />
+  <behavior name="nested_set">
+    <parameter name="left_column" value="left" />
+    <parameter name="right_column" value="right" />
+    <parameter name="level_column" value="tree_level" />
   </behavior>
 </table>
 }}}
 
-In this example, the `name` and `description` columns are moved to a new table, called `item_i18n`, which shares a many-to-one relationship with Item - one Item has many Item translations. But all this happens in the background; for the end user, everything happens as if there were only one main `Item` object:
+2 - Rebuild the model
+
+3 - Change the parent class of your model classes (object and peer) that used the nested set `treeMode`:
 
 {{{
 #!php
 <?php
-$item = new Item();
-$item->setPrice('12.99');
-$item->setName('Microwave oven');
-$item->save();
+// use
+class Category extends BaseCategory
+// instead of
+class Category extends BaseCategoryNestedSet
+
+// use
+class CategoryPeer extends BaseCategoryPeer
+// instead of
+class CategoryPeer extends BaseCategoryNestedSetPeer
 }}}
 
-This creates one record in the `item` table with the price, and another in the `item_i18n` table with the English (default language) translation for the name. Of course, you can add more translations:
+4 - Add the level column to the database. For instance, in MySQL:
 
-{{{
-#!php
-<?php
-$item->setLocale('fr_FR');
-$item->setName('Four micro-ondes');
-$item->setLocale('es_ES');
-$item->setName('Microondas');
-$item->save();
-}}}
-
-This works both for setting AND for getting internationalized columns:
-
-{{{
-#!php
-<?php
-$item->setLocale('en_EN');
-echo $item->getName(); //'Microwave oven'
-$item->setLocale('fr_FR');
-echo $item->getName(); // 'Four micro-ondes'
-}}}
-
-'''Tip''': The big advantage of Propel behaviors is that they use code generation. Even though it's only a proxy method to the `ItemI18n` class, `Item::getName()` has all the phpDoc required to make your IDE happy.
-
-This new behavior also adds special capabiliies to the Query objects. The most interesting allows you to execute less queries when you need to query for an Item and one of its translations - which is common to display a list of items in the locale of the user:
-
-{{{
-#!php
-<?php
-$items = ItemQuery::create()->find(); // one query to retrieve all items
-$locale = 'en_EN';
-foreach ($items as $item) {
-  echo $item->getPrice();
-  $item->setLocale($locale);
-  echo $item->getName(); // one query to retrieve the English translation
-}
-}}}
-
-This code snippet requires 1+n queries, n being the number of items. But just add one more method call to the query, and the SQL query count drops to 1:
-
-{{{
-#!php
-<?php
-$items = ItemQuery::create()
-  ->joinWithI18n('en_EN')
-  ->find(); // one query to retrieve both all items and their translations
-foreach ($items as $item) {
-  echo $item->getPrice();
-  echo $item->getName(); // no additional query
-}
-}}}
-
-In addition to hydrating translations, `joinWithI18n()` sets the correct locale on results, so you don't need to call `setLocale()` for each result.
-
-'''Tip''': `joinWithI18n()` adds a left join with two conditions. That means that the query returns all items, including those with no translation. If you need to return only objects having translations, add `Criteria::INNER_JOIN` as second parameter to `joinWithI18n()`.
-
-Last but not least, Propel's `i18n` behavior is a drop-in replacement for symfony's `i18n` behavior. That means that with a couple more parameters, the locale can be accessed using `setCulture()`, and the `i18n_columns` parameter can be omitted if you explicit the `i18n` table.
-
-Just like the `versionable` behavior, the `i18n` behavior is thoroughly unit-tested and [wiki:Documentation/1.6/Behaviors/i18n fully documented].
-
-== XML/YAML/JSON/CSV Parsing and Dumping ==
-
-ActiveRecord and Collection objects now have the ability to be converted to and from a string, using any of the XML, YAML, JSON, and CSV formats.
-
-The syntax is very intuitive: ActiveRecord and collection objects now offer a `toXML()` and a `fromXML()` method (same for YAML, JSON, and CSV). Here are a few examples:
-
-{{{
-#!php
-<?php
-// dump a collection to YAML
-$books = BookQuery::create()
-  ->orderByTitle()
-  ->joinWith('Author')
-  ->find();
-echo $books->toYAML();
-// Book_1:
-//   Id: 123
-//   Title: Pride and Prejudice
-//   AuthorId: 456
-//   Author:
-//     Id: 456
-//     FirstName: Jane
-//     LastName: Austen
-// Book_2:
-//   Id: 789
-//   Title: War and Peace
-//   AuthorId: 147
-//   Author:
-//     Id: 147
-//     FirstName: Leo
-//     LastName: Tolstoi
-
-// parse an XML string into an object
-$bookString = <<<EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<data>
-  <Id>9012</Id>
-  <Title><![CDATA[Don Juan]]></Title>
-  <ISBN><![CDATA[0140422161]]></ISBN>
-  <Price>12.99</Price>
-  <PublisherId>1234</PublisherId>
-  <AuthorId>5678</AuthorId>
-</data>
-EOF;
-$book = new Book();
-$book->fromXML($bookString);
-echo $book->getTitle(); // Don Juan
-}}}
-
-== Model Objects String Representation ==
-
-Taking advantage of the dumping abilities just introduced, all ActiveRecord objects now have a string representation based on a YAML dump of their properties:
-
-{{{
-#!php
-<?php
-$author = new Author();
-$author->setFirstName('Leo');
-$author->setLastName('Tolstoi');
-echo $author;
-// Id: null
-// FirstName: Leo
-// LastName: Tolstoi
-// Email: null
-// Age: null
-}}}
-
-'''Tip''': Tables with a column using the `isPrimaryString` attribute still output the value of a single column as string representation.
-
-`PropelCollection` objects also take advantage from this possibility:
-
-{{{
-#!php
-<?php
-$authors = AuthorQuery::create()
-  ->orderByLastName()
-  ->find();
-echo $authors;
-// Author_0:
-//   Id: 456
-//   FirstName: Jane
-//   LastName: Austen
-//   Email: null
-//   Age: null
-// Author_1:
-//   Id: 147
-//   FirstName: Leo
-//   LastName: Tolstoi
-//   Email: null
-//   Age: null
-}}}
-
-If you want to use another format for the default string representation instead of YAML, you can set the `defaultStringFormat` attribute to any of the supported formats in either the `<database>` or the `<table>` elements in the XML schema:
-	
 {{{
 #!xml
-<table name="publisher" defaultStringFormat="XML">
+ALTER TABLE `category` ADD COLUMN tree_level INTEGER;
+}}}
+
+5 - Update the level value in the existing nodes, using the `fixLevels()` Peer method
+
+{{{
+#!php
+<?php
+// run it once
+CategoryPeer::fixLevels();
+}}}
+
+The nested set behavior implementation has a few added benefits:
+
+ * All the methods that execute several queries use transactions, so a database failure won't break a tree anymore
+ * The methods retrieveing a list of nodes accept a Criteria as first parameter, to filter the results
+ * New methods make it easier to work with trees: `retrieveRoots()`, `isDescendantOf()`, `isAncestorOf()`, `getBranch()`, `addChild()`, etc.
+ * There is no longer any introspection at runtime (for instance to check scope support), resulting in yet another boost in performance
+ * A few bugs were fixed (for instance in the use of `delete()`)
+ * A node can be inserted to the tree after it is saved. This allows for better preparation of data before insertion in the tree
+ * The new implementation is much more robust, thanks to a ''full unit testing coverage''. That's more than 350 unit tests to ensure that your trees won't ever break due to an incorrect piece of code in the nested sets.
+ * The API was rethought to make it more intuitive - but with method proxies to keep BC
+
+As a consequence, the use of `treeMode="NestedSet"` in a schema is deprecated. Check the new [wiki:Users/Documentation/1.5/Behaviors/nested_set nested_set behavior documentation] for more details.
+
+=== Sluggable Behavior ===
+
+This behavior answers a very common need: to give a model a unique string representation that can be used to make a user-friendly URL.
+
+The classical example is that of a blog engine, where you need every record of a `post` table to have a unique URL. Simply enable the `sluggable` behavior in your schema and rebuild the model:
+
+{{{
+#!xml
+<table name="post">
   <column name="id" required="true" primaryKey="true" autoIncrement="true" type="INTEGER" />
-  <column name="name" required="true" type="VARCHAR" size="128" />
+  <column name="title" type="VARCHAR" required="true" primaryString="true" />
+  <column name="content" type="LONGVARCHAR"/>
+  <behavior name="sluggable">
+    <parameter name="slug_pattern" value="/posts/{Title}" />
+  </behavior>
 </table>
 }}}
 
+Now, every time you save a new `Post` object, Propel will compose its slug according to the pattern defined in the behavior parameter and save it in an additional `slug` column:
+
 {{{
 #!php
 <?php
-$publisher = new Publisher();
-$publisher->setName('Penguin');
-echo $publisher;
-// <?xml version="1.0" encoding="UTF-8"?>
-// <data>
-//   <Id></Id>
-//   <Name><![CDATA[Peguin]]></Name>
-// </data>
+$post1 = new Post();
+$post1->setTitle('How Is Life On Earth?');
+$post1->setContent('Lorem Ipsum...');
+$post1->save();
+echo $post1->getSlug(); // '/posts/how-is-life-on-earth'
 }}}
 
-== Multiple Buildtime Connections ==
+Propel replaces every name enclosed between brackets in the slug pattern by the related column value. It also cleans up the string to make it URL-compatible, and ensures that it is unique.
 
-Propel 1.5 used the `build.properties` for buildtime connection settings. This had one major drawback: it used to be impossible to deal with several connections at buildtime, let alone several RDBMS.
+If you use this slug in URLs, you will need to retrieve a `Post` object based on it. This is just a one-liner:
 
-In Propel 1.6, you can write your buildtime connection settings in a `buildtime-conf.xml` file. The format is the same as the `runtime-conf.xml` file, so a good starting point is to copy the runtime conf, and change the settings for users wit hgreater privileges.
+{{{
+#!php
+<?php
+$post = PostQuery::create()->findOneBySlug('/posts/how-is-life-on-earth');
+}}}
 
-Here is an example buildtime configuration file that defines a MySQL and a SQLite connection:
+There are many ways to customize the `sluggable` behavior to match the needs of your applications. Check the new [wiki:Users/Documentation/1.5/Behaviors/sluggable sluggable behavior documentation] for more details.
+
+=== Concrete Table Inheritance Behavior ===
+
+Propel has offered [wiki:Users/Documentation/1.5/Inheritance#SingleTableInheritance Single Table Inheritance] for a long time. But for complex table inheritance needs, it is necessary to provide [http://martinfowler.com/eaaCatalog/concreteTableInheritance.html Concrete Table Inheritance]. Starting with Propel 1.5, this inheritance implementation is supported through the new `concrete_inheritance` behavior.
+
+In the following example, the `article` and `video` tables use this behavior to inherit the columns and foreign keys of their parent table, `content`:
 
 {{{
 #!xml
-<?xml version="1.0"?>
-<config>
-  <propel>
-    <datasources default="bookstore">
-      <datasource id="bookstore">
-        <adapter>mysql</adapter>
-        <connection>
-          <dsn>mysql:host=localhost;dbname=bookstore</dsn>
-          <user>testuser</user>
-          <password>password</password>
-        </connection>
-      </datasource>
-      <datasource id="cms">
-        <adapter>sqlite</adapter>
-        <connection>
-          <dsn>sqlite:/opt/databases/mydb.sq3</dsn>
-        </connection>
-      </datasource>
-    </datasources>
-  </propel>
-</config>
-}}}
-
-Now that Propel can deal with database vendors at buildtime more accurately, the generated classes offer more optimizations for the database they rely one. Incidentally, that means that you should rebuild your model if you use different database vendors. Thats includes cases when your developement and production environments use different vendors.
-
-== Support For SQL Schemas ==
-
-For complex models showing a large number of tables, database administrators often like to group tables into "SQL schemas", which are namespaces in the SQL server. Starting with Propel 1.6, it is now possible to assign tables to SQL schemas using the `schema` attribute in the `<database>` of the `<table>` tag:
-
-{{{
-#!xml
-<database name="my_connection">
-  <table name="book" schema="bookstore">
-    <column name="id" required="true" primaryKey="true" autoIncrement="true" type="INTEGER" />
-    <column name="title" type="VARCHAR" required="true" />
-    <column name="author_id" type="INTGER" />
-    <foreign-key foreignTable="author" foreignSchema="people" onDelete="setnull" onUpdate="cascade">
-      <reference local="author_id" foreign="id" />
-    </foreign-key>
-  </table>
-  <table name="author" schema="people">
-    <column name="id" required="true" primaryKey="true" autoIncrement="true" type="INTEGER" />
-    <column name="name" type="VARCHAR" required="true" />
-  </table>
-</database>
-}}}
-
-'''Tip''': This feature is only available in PostgreSQL, MSSQL, and MySQL. The `schema` attribute is simply ignored in Oracle and SQLite.
-
-Propel also supports foreign keys between tables assigned to two different schemas. For MySQL, where "SQL schema" is a synonym for "database", this allows for cross-database queries.
-
-The Propel documentation contains a new tutorial about the SQL schema attributes and usage, called [wiki:Documentation/1.6/Using-SQL-Schemas Using SQL Schemas].
-
-== Foreign Key Filters Now Accept a Collection ==
-
-The generated `filterByRelationName()` methods in the model queries now accept a `PropelCollection` as argument. This will allow you to keep using objects and avoid dealing with foreign keys completely:
-
-{{{
-#!php
-<?php
-// get young authors
-$authors = AuthorQuery::create()
-  ->filterByAge(array('max' => 35))
-  ->find(); // $authors is a PropelObjectCollection
-// get all books by young authors
-$books = BookQuery::create()
-  ->filterByAuthor($authors) // <= That's new
-  ->find();
-}}}
-
-== Join With Several Conditions ==
-
-Creating a Join with more than one connection is now very easy. Just call `ModelCriteria::addJoinCondition($joinName, $condition)` after a `ModelCriteria::join()` to add further conditions to a join:
-
-{{{
-#!php
-<?php
-$authors = AuthorQuery::create()
-  ->join('Author.Book')
-  ->addJoinCondition('Book', 'Book.Title IS NOT NULL')
-  ->find();
-// SELECT * FROM author
-// INNER JOIN book ON (author.ID=book.AUTHOR_ID AND book.TITLE IS NOT NULL);
-}}}
-
-If you need to bind a variable to the condition, set the variable as last parameter of the `addJoinCondition()` call. Propel correctly binds the value using PDO:
-
-{{{
-#!php
-<?php
-$authors = AuthorQuery::create()
-  ->join('Author.Book')
-  ->addJoinCondition('Book', 'Book.Title LIKE ?', 'War%')
-  ->find();
-// SELECT * FROM author
-// INNER JOIN book ON (author.ID=book.AUTHOR_ID AND book.TITLE LIKE 'War%');
-}}}
-
-'''Tip''': `Criteria::addMultipleJoin()`, which allowed the same feature to some extent in previous versions, is now deprecated, since it was vulnerable in SQL injection attacks.
-
-== Advanced Column Types ==
-
-Propel 1.6 introduces a new set of column types. The database-agnostic implementation allows these column types to work on all supported RDBMS.
-
-=== ENUM Columns ===
-
-Although stored in the database as integers, ENUM columns let users manipulate a set of predefined values, without worrying about their storage.
-
-{{{
-#!xml
-<table name="book">
-  ...
-  <column name="style" type="ENUM" valueSet="novel, essay, poetry" />
+<table name="content">
+  <column name="id" type="INTEGER" primaryKey="true" autoIncrement="true"/>
+  <column name="title" type="VARCHAR" size="100"/>
+  <column name="category_id" required="false" type="INTEGER" />
+  <foreign-key foreignTable="category" onDelete="cascade">
+    <reference local="category_id" foreign="id" />
+  </foreign-key>
+</table>
+<table name="category">
+  <column name="id" required="true" primaryKey="true" autoIncrement="true" type="INTEGER" />
+  <column name="name" type="VARCHAR" size="100" primaryString="true" />
+</table>
+<table name="article">
+  <behavior name="concrete_inheritance">
+    <parameter name="extends" value="content" />
+  </behavior>
+  <column name="body" type="VARCHAR" size="100"/>
+</table>
+<table name="video">
+  <behavior name="concrete_inheritance">
+    <parameter name="extends" value="content" />
+  </behavior>
+  <column name="resource_link" type="VARCHAR" size="100"/>
 </table>
 }}}
 
+The behavior copies the columns of the parent table to the child tables. That means that the generated `Article` and `Video` models have a `Title` property and a `Category` relationship:
+
 {{{
 #!php
 <?php
-// The ActiveRecord setter and getter let users use any value from the valueSet
-$book = new Book();
-$book->setStyle('novel');
-echo $book->getStyle(); // novel
-// Trying to set a value not in the valueSet throws an exception
-
-// Each value in an ENUM column has a related constant in the Peer class
-// Your IDE with code completion should love this
-echo BookPeer::STYLE_NOVEL;  // 'novel'
-echo BookPeer::STYLE_ESSAY;  // 'essay'
-echo BookPeer::STYLE_POETRY; // 'poetry'
-// The Peer class also gives access to list of available values
-print_r(BookPeer::getValueSet(BookPeer::STYLE)); // array('novel', 'essay', 'poetry')
-
-// ENUM columns are also searchable, using the generated filterByXXX() method
-// or other ModelCritera methods (like where(), orWhere(), condition())
-$books = BookQuery::create()
-  ->filterByStyle('novel')
-  ->find();
+// create a new Category
+$cat = new Category();
+$cat->setName('Movie');
+$cat->save();
+// create a new Article
+$art = new Article();
+$art->setTitle('Avatar Makes Best Opening Weekend in the History');
+$art->setCategory($cat);
+$art->setContent('With $232.2 million worldwide total, Avatar had one of the best-opening weekends in the history of cinema.');
+$art->save();
+// create a new Video
+$vid = new Video();
+$vid->setTitle('Avatar Trailer');
+$vid->setCategory($cat);
+$vid->setResourceLink('http://www.avatarmovie.com/index.html')
+$vid->save();
 }}}
 
-=== OBJECT Columns ===
-
-An `OBJECT` column can store PHP objects (mostly Value Objects) in the database. The column setter serializes the object, which is later stored to the database as a string. The column getter unserializes the string and returns the object. Therefore, for the end user, the column contains an object.
+If Propel stopped there, the `concrete_inheritance` behavior would only provide a shorcut to avoid repeating tags in the schema. But wait, there is more: the `Article` and `Video` classes actually extend the `Content` class:
 
 {{{
 #!php
 <?php
-class GeographicCoordinates
+class Content extends BaseContent
 {
-  public $latitude, $longitude;
-  
-  public function __construct($latitude, $longitude)
+  public function getCategoryName()
   {
-    $this->latitude = $latitude;
-    $this->longitude = $longitude;
-  }
-  
-  public function isInNorthernHemisphere()
-  {
-    return $this->latitude > 0;
+    return $this->getCategory()->getName();
   }
 }
-
-// The 'house' table has a 'coordinates' column of type OBJECT
-$house = new House();
-$house->setCoordinates(new GeographicCoordinates(48.8527, 2.3510));
-echo $house->getCoordinates()->isInNorthernHemisphere(); // true
-$house->save();
+echo $art->getCategoryName(); // 'Movie'
+echo $vid->getCategoryName(); // 'Movie'
 }}}
 
-Not only do `OBJECT` columns benefit from these smart getter and setter in the generated Active Record class, they are also searchable using the generated `filterByXXX()` method in the query class:
+And the true power of Propel's Concrete Table Inheritance is that every time you save an `Article` or a `Video` object, Propel saves a copy of the `title` and `category_id` columns in a `Content` object. Consequently, retrieving objects regardless of their child type becomes very easy:
+
+{{{
+#!php
+<?php 
+$conts = ContentQuery::create()->find();
+foreach ($conts as $content) {
+  echo $content->getTitle() . "(". $content->getCategoryName() ")/n";
+}
+// Avatar Makes Best Opening Weekend in the History (Movie)
+// Avatar Trailer (Movie)
+}}}
+
+The resulting relational model is denormalized - in other terms, data is copied across tables - but the behavior takes care of everything for you. That allows for very effective read queries on complex inheritance structures.
+
+Check out the brand new [wiki:Users/Documentation/1.5/Inheritance#ConcreteTableInheritance Inheritance Documentation] for more details on using and customizing this behavior.
+
+=== Sortable Behavior ===
+
+Have you ever enhanced a Propel Model to give it the ability to move up or down in an ordered list? The `sortable` behavior, new in Propel 1.5, offers exactly that... and even more.
+
+As usual for behaviors, activate `sortable` in your `schema.yml`:
+
+{{{
+#!xml
+<table name="task">
+  <column name="id" required="true" primaryKey="true" autoIncrement="true" type="INTEGER" />
+  <column name="title" type="VARCHAR" required="true" primaryString="true" />
+  <column name="user_id" required="true" type="INTEGER" />
+  <foreign-key foreignTable="user" onDelete="cascade">
+    <reference local="user_id" foreign="id" />
+  </foreign-key>
+  <behavior name="sortable">
+    <parameter name="use_scope" value="true" />
+    <parameter name="scope_column" value="user_id" />
+  </behavior>
+</table>
+}}}
+
+Then rebuild your model, and you're done. You have just created an ordered task list for users:
 
 {{{
 #!php
 <?php
-$house = HouseQuery::create()
-  ->filterByCoordinates(new GeographicCoordinates(48.8527, 2.3510))
-  ->find();
+// test users
+$paul = new User();
+$john = new User();
+
+// create the tasks
+$t1 = new Task();
+$t1->setTitle('Wash the dishes');
+$t1->setUser($paul);
+$t1->save();
+echo $t1->getRank(); // 1
+$t2 = new Task();
+$t2->setTitle('Do the laundry');
+$t2->setUser($paul);
+$t2->save();
+echo $t2->getRank(); // 2
+$t3 = new Task();
+$t3->setTitle('Rest a little');
+$t3->setUser($john);
+$t3->save()
+echo $t3->getRank(); // 1, because John has his own task list
+
+// retrieve the tasks
+$allPaulsTasks = TaskPeer::retrieveList($scope = $paul->getId());
+$allJohnsTasks = TaskPeer::retrieveList($scope = $john->getId());
+$t1 = TaskPeer::retrieveByRank($rank = 1, $scope = $paul->getId());
+$t2 = $t1->getNext();
+$t2->moveUp();
+echo $t2->getRank(); // 1
+echo $t1->getRank(); // 2
 }}}
 
-Propel looks in the database for a serialized version of the object passed as parameter of the `filterByXXX()` method.
+This new behavior is fully unit tested and very customizable. Check out all you can do with `sortable` in the [wiki:Users/Documentation/1.5/Behaviors/sortable sortable behavior documentation].
 
-=== ARRAY Columns ===
+=== Timestampable Behavior ===
 
-An `ARRAY` column can store a simple PHP array in the database (nested arrays and associative arrays are not accepted). The column setter serializes the array, which is later stored to the database as a string. The column getter unserializes the string and returns the array. Therefore, for the end user, the column contains an array.
+This behavior is not new, since it was introduced in Propel 1.4. However, with the introduction of model queries, it gains specific query methods that will ease your work when retrieving objects based on their update date:
 
 {{{
 #!php
 <?php
-// The 'book' table has a 'tags' column of type ARRAY
-$book = new Book();
-$book->setTags(array('novel', 'russian'));
-print_r($book->getTags()); // array('novel', 'russian')
-
-// If the column name is plural, Propel also generates hasXXX(), addXXX(),
-// and removeXXX() methods, where XXX is the singular column name
-echo $book->hasTag('novel'); // true
-$book->addTag('romantic');
-print_r($book->getTags()); // array('novel', 'russian', 'romantic')
-$book->removeTag('russian');
-print_r($book->getTags()); // array('novel', 'romantic')
+$books = BookQuery::create()
+  ->recentlyUpdated()  // adds a minimum value for the update date
+  ->lastUpdatedFirst() // orders the results by descending update date
+  ->find();
 }}}
 
-Propel doesn't use `serialize()` to transform the array into a string. Instead, it uses a special serialization function, that makes it possible to search for values of `ARRAY` columns.
+== Better `toArray()` ==
+
+When you call `toArray()` on a model object, you can now ask for the related objects:
 
 {{{
 #!php
 <?php
-// Search books that contain all the specified tags
-$books = BookQuery::create()
-  ->filterByTags(array('novel', 'russian'), Criteria::CONTAINS_ALL)
-  ->find();
-
-// Search books that contain at least one of the specified tags
-$books = BookQuery::create()
-  ->filterByTags(array('novel', 'russian'), Criteria::CONTAINS_SOME)
-  ->find();
-
-// Search books that don't contain any of the specified tags
-$books = BookQuery::create()
-  ->filterByTags(array('novel', 'russian'), Criteria::CONTAINS_NONE)
-  ->find();
-
-// If the column name is plural, Propel also generates singular filter methods
-// expecting a scalar parameter instead of an array
-$books = BookQuery::create()
-  ->filterByTag('russian')
-  ->find();
+$bookArray = $book->toArray($keyType = BasePeer::TYPE_COLNAME, $includeLazyLoadColumns = true, $includeForeignObjects = true);
+print_r($bookArray);
+  => array(
+       'Id'          => 123,
+       'Title'       => 'War And Peace',
+       'ISBN'        => '3245234535',
+       'AuthorId'    => 456,
+       'PublisherId' => 567
+       'Author'      => array(
+         'Id'          => 456,
+         'FirstName'   => 'Leo',
+         'LastName'    => 'Tolstoi'
+       ), 
+       'Publisher'   => array(
+         'Id'          => 567,
+         'Name'        => 'Penguin'
+       )
+     )
 }}}
 
-'''Tip''': Filters on array columns translate to SQL as LIKE conditions. That means that the resulting query often requires a full table scan, and is not suited for large tables.
+Only the related objects that were already hydrated appear in the result, so `toArray()` never issues additional queries. Together with the ability to return arrays instead of objects when using `PropelQuery`, this addition will help to debug and optimize model code.
 
-'''Warning''': Only generated Query classes (through generated `filterByXXX()` methods) and `ModelCriteria` (through `where()`, `orWhere()`, and `condition()`) allow conditions on `ENUM`, `OBJECT`, and `ARRAY` columns. `Criteria` alone (through `add()`, `addAnd()`, and `addOr()`) does not support conditions on such columns.
+== Better Oracle Support ==
 
-== Better Pluralizer ==
+The Oracle adapter for the generator, the reverse engineering, and the runtime components have been greatly improved. This should provide an easier integration of Propel with an Oracle database.
 
-Have you ever considered Propel as a lame English speaker? Due to its poor pluralizer, Propel used to be unable to create proper getter methods in one-to-many relationships when dealing with foreign objects named 'Child', 'Category', 'Wife', or 'Sheep'.
+== Code Cleanup ==
 
-Starting with Propel 1.6, Propel adds a new pluralizer class named `StandardEnglishPluralizer`, which should take care of most of the irregular plural forms of your domain class names. This new pluralizer is disabled by default for backwards compatibility reasons, but it's very easy to turn it on in your `build.properties` file:
+=== Directory Structure Changes ===
+
+The organization of the Propel runtime and generator code has been reworked, in order to make navigation across Propel classes easier for developers. End users should see no difference, apart if your `build.properties` references alternate builder classes in the Propel code. In that case, you will need to update your `build.properties` with the new paths. For instance, a reference to:
 
 {{{
 #!ini
-propel.builder.pluralizer.class = builder.util.StandardEnglishPluralizer
+propel.builder.peer.class = propel.engine.builder.om.php5.PHP5PeerBuilder
 }}}
 
-Rebuild your model, and voila: ActiveRecord objects can now retrieve foreign objects using `getChildren()`, `getCategories()`, `getWives()`, and... `getSheep()`.
+Must be changed to:
 
-== New Reference Chapter in the Documentation: Active Record ==
+{{{
+#!ini
+propel.builder.peer.class = builder.om.PHP5PeerBuilder  
+}}}
 
-There wasn't any one-stop place to read about the abilities of the generated Active Record objects in the Propel documentation. Since Propel 1.6, the new [wiki:Documentation/1.6/ActiveRecord Active Record reference] makes it easier to learn the  usage of Propel models using code examples.
+Browse the Propel generator directory structure to find the classes you need.
+
+=== DebugPDO Refactoring ===
+
+To allow custom connection handlers, the debug code that was written in the `DebugPDO` class has been moved to `PropelPDO`. The change is completely backwards compatible, but makes it easier to connect to a database without using PDO.
+
+During the change, the [wiki:Users/Documentation/1.5/07-Logging documentation about Propel logging and debugging features] was rewritten and should now be clearer.
+
+== propel-gen Script Modifications ==
+
+The `propel-gen` script no longer requires a path to the project directory if you call it from a project directory. That means that calling `propel-gen` with a single argument defaults to expecting a task name:
+
+{{{
+> cd /path/to/my/project
+> propel-gen reverse
+}}}
+
+By default, the `propel-gen` command called without a task name defaults to the `main` task (and builds the model, the SQL, and the generation).
+
+Note: The behavior of the `propel-gen` script when called with one parameter differs from what it used to be in Propel 1.4, where the script expected a path in every situation. So the following syntax won't work anymore:
+
+{{{
+> propel-gen /path/to/my/project
+}}}
+
+Instead, use either:
+
+{{{
+> cd /path/to/my/project
+> propel-gen
+}}}
+
+or:
+
+{{{
+> propel-gen /path/to/my/project main
+}}}
+
+== License Change ==
+
+Propel is more open-source than ever. To allow for an easier distribution, the open-source license of the Propel library changes from LGPL3 to MIT. This [http://en.wikipedia.org/wiki/MIT_License MIT License] is also known as the X11 License. 
+
+This change removes a usage restriction enforced by the LGPL3: you no longer need to release any modifications to the core Propel source code under a LGPL compatible license. 
+
+Of course, you still have the right to use, copy, modify, merge, publish, distribute, sublicense, and/or sell Propel. In other terms, you can do whatever you want with the Propel code, without worrying about the license, as long as you leave the LICENSE file within.
 
 == Miscellaneous ==
 
- * A new `dbd2propel` task allows to convert [http://www.fabforce.net/dbdesigner4/ DBDesigner 4] models to a Propel schema in an easier way than the previous PHP script located under the `contrib/` folder. See the new [wiki:Documentation/1.6/DBDesigner DBDesigner2Propel chapter] for details.
- * By the way, the `contrib/` directory was removed from the core - it was not maintained anymore. Previous versions can be found in the 1.5 branch.
- * `ModelCriteria::keepQuery()` is now ON by default. This will remove bad surprises when doing a `count()` before a `find()`, and has a very limited impact on performance. You should not need to manually call `keepQuery()` anymore.
- * `ModelCriteria::with()` is now a little smarter, and therefore reduces even more the query count when hydrating one-to-many relationships.
- * Runtime Exceptions now look better in PHP 5.3, since Propel takes advantage of exception linking
- * Read queries (issued by Query termination methods `findPk()`, `find()`, `findOne()`, and `count()`) now don't create a transaction by default. Write queries still do.
- * The generated `toArray()` method for !ActiveRecord objects can now include collections, without risk of infinite recursion. Therefore `$author->toArray()` also outputs the collection of Books by the author. The dumping abilities introduced in 1.6 take advantage of this feature.
- * `PropelModelPager` now behaves more like a `PropelCollection`, thanks to the addition of `isFirst()`, `isLast()`, `isOdd()`, and `isEven()` methods. That means that it's easier to replace a `find()` by a `paginate()` as termination method for a query if there is a complex formatting.
- * Despite all that you may have read about PHP 5.3's garbage collector, memory leaks still exist on some particular circular references. Propel generates a `clearAllReferences()` method on all !ActiveRecord classes, and this method has been improved in Propel 1.6 to handle the existing leaks. Use it when you iterate on large collections of objects, or where the memory is limited.
- * For each database, Behaviors are now added to a priority queue. This allows to execute some behaviors before others, and to solve conflicts between behaviors. See [wiki:Documentation/1.6/Writing-Behavior#SpecifyingaPriorityForBehaviorExecution Hpw to Write a Behavior].
- * Propel now supports tablespace definition on Oracle tables using custom `<vendor>` tags. See the [wiki:Documentation/1.6/Schema#AddingVendorInfo Schema reference] for details.
+ * Generated model classes now offer a `fromArray()` and a `toArray()` method by default. This feature existed before, but was disabled by default in the `build.properties`. The `addGenericAccessors` and `addGenericMutators` settings are therefore enabled by default in Propel 1.5.
+ * You can now prefix all the table names of a database schema by setting the `tablePrefix` attribute of the `<database>` tag.
+ * The `addIncludes` build property introduced in Propel 1.4 is now set to `false` by default. That means that the runtime autoloading takes care of loading all classes at runtime, including generated Base classes.
+ * A bugfix in the name generator for related object getter in tables with two foreign keys related to the same table may have introduced problems in applications relying on old (wrong) names. Check your generated base model classes for the `getXXXrelatedByYYY()` and modify the application code relying on it if it exists. A good rule of thumb to avoid problems in such case is to name your relations by using the `phpName` and `refPhpName` attributes in the `<foreign-key>` element in the schema.
+ * XSL transformation of your schemas is no longer enabled by default. Turn the `propel.schema.transform` setting to `true` in your `build.properties` to enable it again. This change removes the requirement on the libxslt extention for Propel.
+ * `ModelObject::addSelectColumns()` now accepts an additional parameter to allow the use of table aliases
+ * Added `ModelObject::clear()` to reinitialize a model object
+ * Added `ModelObject::isPrimaryKeyNull()` method to check of an object was hydrated with no values (in case of a left join)
+ * Added `Criteria::addSelectModifier($modifier)` to add more than one select modifier (e.g. 'SQL_CALC_FOUND_ROWS', 'HIGH_PRIORITY', etc.)
+ * Added `PeerClass::addGetPrimaryKeyFromRow()` to retrieve the Primary key from a result row
+ * Added a new set of constants in the generated Peer class to list column names without the table name (this is `BasePeer::TYPE_RAW_COLNAME`)
+ * Removed references to Creole in the code (Propel uses PDO instead of Creole since version 1.3)

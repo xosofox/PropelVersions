@@ -8,7 +8,7 @@
  * @license    MIT License
  */
 
-require_once dirname(__FILE__) . '/../../../../tools/helpers/bookstore/BookstoreEmptyTestBase.php';
+require_once 'tools/helpers/bookstore/BookstoreEmptyTestBase.php';
 
 /**
  * Tests the delete methods of the generated Peer classes.
@@ -412,9 +412,9 @@ class GeneratedPeerDoDeleteTest extends BookstoreEmptyTestBase
 	public function testDoCountType()
 	{
 		$c = new Criteria();
-		$this->assertInternalType('integer', BookPeer::doCount($c), "Expected doCount() to return an integer.");
-		$this->assertInternalType('integer', BookPeer::doCountJoinAll($c), "Expected doCountJoinAll() to return an integer.");
-		$this->assertInternalType('integer', BookPeer::doCountJoinAuthor($c), "Expected doCountJoinAuthor() to return an integer.");
+		$this->assertType('integer', BookPeer::doCount($c), "Expected doCount() to return an integer.");
+		$this->assertType('integer', BookPeer::doCountJoinAll($c), "Expected doCountJoinAll() to return an integer.");
+		$this->assertType('integer', BookPeer::doCountJoinAuthor($c), "Expected doCountJoinAuthor() to return an integer.");
 	}
 
 	/**
@@ -486,7 +486,7 @@ class GeneratedPeerDoDeleteTest extends BookstoreEmptyTestBase
 		$c->addAscendingOrderByColumn(BookPeer::ID);
 		
 		// None of these should not throw an exception!
-		BookPeer::doCountJoinAll($c);
+		BookPeer::doCountJoinAll($c); 
 		BookPeer::doCountJoinAllExceptAuthor($c);
 		BookPeer::doCountJoinAuthor($c);
 	}

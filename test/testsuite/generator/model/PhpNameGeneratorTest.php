@@ -8,14 +8,15 @@
  * @license    MIT License
  */
 
-require_once 'PHPUnit/Framework.php';
-require_once dirname(__FILE__) . '/../../../../generator/lib/model/PhpNameGenerator.php';
+require_once 'PHPUnit/Framework/TestCase.php';
+require_once 'model/PhpNameGenerator.php';
+
 
 /**
  * Tests for PhpNamleGenerator
  *
  * @author     <a href="mailto:mpoeschl@marmot.at>Martin Poeschl</a>
- * @version    $Revision: 1834 $
+ * @version    $Revision: 1612 $
  * @package    generator.model
  */
 class PhpNameGeneratorTest extends PHPUnit_Framework_TestCase

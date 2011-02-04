@@ -1,7 +1,7 @@
 <?php
 
 /*
- *	$Id: AutoAddPkBehaviorTest.php 1834 2010-07-20 21:14:29Z francois $
+ *	$Id: AutoAddPkBehaviorTest.php 1612 2010-03-16 22:56:21Z francois $
  * This file is part of the Propel package.
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -9,13 +9,12 @@
  * @license    MIT License
  */
 
-require_once dirname(__FILE__) . '/../../../tools/helpers/bookstore/BookstoreTestBase.php';
-
+require_once 'tools/helpers/bookstore/BookstoreTestBase.php';
 /**
  * Tests for AutoAddPkBehavior class
  *
  * @author		 François Zaninotto
- * @version		$Revision: 1834 $
+ * @version		$Revision: 1612 $
  * @package		generator.behavior
  */
 class AutoAddPkBehaviorTest extends BookstoreTestBase 

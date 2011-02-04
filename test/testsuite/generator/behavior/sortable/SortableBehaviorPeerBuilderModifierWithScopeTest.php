@@ -9,13 +9,13 @@
  * @license    MIT License
  */
 
-require_once dirname(__FILE__) . '/../../../../tools/helpers/bookstore/behavior/BookstoreSortableTestBase.php';
+require_once 'tools/helpers/bookstore/behavior/BookstoreSortableTestBase.php';
 
 /**
  * Tests for SortableBehavior class
  *
  * @author		Massimiliano Arione
- * @version		$Revision: 1834 $
+ * @version		$Revision: 1612 $
  * @package		generator.behavior.sortable
  */
 class SortableBehaviorPeerBuilderModifierWithScopeTest extends BookstoreSortableTestBase

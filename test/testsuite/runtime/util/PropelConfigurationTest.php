@@ -8,9 +8,8 @@
  * @license    MIT License
  */
 
-require_once 'PHPUnit/Framework.php';
+require_once 'PHPUnit/Framework/TestCase.php';
 require_once dirname(__FILE__) . '/../../../../runtime/lib/config/PropelConfiguration.php';
-require_once dirname(__FILE__) . '/../../../../runtime/lib/config/PropelConfigurationIterator.php';
 
 /**
  * Test for PropelConfiguration class
@@ -32,23 +31,23 @@ class PropelConfigurationTest extends PHPUnit_Framework_TestCase
   {
   	$conf = new PropelConfiguration($this->testArray);
   	$expected = array('foo.fooo' => 'bar', 'foo.fi.fooooo' => 'bara', 'baz' => 'bar2');
-  	$this->assertEquals($expected, $conf->getParameters(PropelConfiguration::TYPE_ARRAY_FLAT), 'getParameters can return a flat array');
+  	$this->assertEquals($expected, $conf->getParameters(PropelConfiguration::TYPE_ARRAY_FLAT), 'getParameters can return a flat array');  	
   }
 
   public function testGetParameter()
   {
   	$conf = new PropelConfiguration($this->testArray);
-  	$this->assertEquals('bar', $conf->getParameter('foo.fooo'), 'getParameter accepts a flat key');
-  	$this->assertEquals('bara', $conf->getParameter('foo.fi.fooooo'), 'getParameter accepts a flat key');
-  	$this->assertEquals('bar2', $conf->getParameter('baz'), 'getParameter accepts a flat key');
+  	$this->assertEquals('bar', $conf->getParameter('foo.fooo'), 'getParameter accepts a flat key');  	
+  	$this->assertEquals('bara', $conf->getParameter('foo.fi.fooooo'), 'getParameter accepts a flat key');  	
+  	$this->assertEquals('bar2', $conf->getParameter('baz'), 'getParameter accepts a flat key');  	
   }
 
 	public function testGetParameterDefault()
 	{
   	$conf = new PropelConfiguration($this->testArray);
-  	$this->assertEquals('bar', $conf->getParameter('foo.fooo'), 'getParameter accepts a flat key');
-		$this->assertEquals('', $conf->getParameter('foo.fooo2'), 'getParameter returns null for nonexistent keys');
-		$this->assertEquals('babar', $conf->getParameter('foo.fooo3', 'babar'), 'getParameter accepts a default value');
+  	$this->assertEquals('bar', $conf->getParameter('foo.fooo'), 'getParameter accepts a flat key');  	
+		$this->assertEquals('', $conf->getParameter('foo.fooo2'), 'getParameter returns null for nonexistent keys');  	
+		$this->assertEquals('babar', $conf->getParameter('foo.fooo3', 'babar'), 'getParameter accepts a default value');  	
 	} 
 	 
   public function testSetParameter()

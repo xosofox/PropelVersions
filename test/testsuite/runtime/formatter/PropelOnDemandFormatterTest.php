@@ -8,7 +8,7 @@
  * @license    MIT License
  */
 
-require_once dirname(__FILE__) . '/../../../tools/helpers/bookstore/BookstoreEmptyTestBase.php';
+require_once 'tools/helpers/bookstore/BookstoreEmptyTestBase.php';
 
 /**
  * Test class for PropelOnDemandFormatter.
@@ -78,7 +78,7 @@ class PropelOnDemandFormatterTest extends BookstoreEmptyTestBase
 		$con = Propel::getConnection(BookPeer::DATABASE_NAME);
 		Propel::disableInstancePooling();
 		$book = new Book();
-		for ($i=0; $i < $nbBooks; $i++) {
+		for ($i=0; $i < $nbBooks; $i++) { 
 			$book->clear();
 			$book->setTitle('BookTest' . $i);
 			$book->save($con);
