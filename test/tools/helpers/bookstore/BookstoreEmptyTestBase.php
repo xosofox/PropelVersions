@@ -9,8 +9,8 @@
  * @license    MIT License
  */
 
-require_once 'BookstoreTestBase.php';
-require_once 'BookstoreDataPopulator.php';
+require_once 'tools/helpers/bookstore/BookstoreTestBase.php';
+require_once 'tools/helpers/bookstore/BookstoreDataPopulator.php';
 
 /**
  * Base class contains some methods shared by subclass test cases.
@@ -18,12 +18,21 @@ require_once 'BookstoreDataPopulator.php';
 abstract class BookstoreEmptyTestBase extends BookstoreTestBase
 {
 	/**
-	 * This is run before each unit test; it empties the database.
+	 * This is run before each unit test; it populates the database.
 	 */
 	protected function setUp()
 	{
 		parent::setUp();
 		BookstoreDataPopulator::depopulate($this->con);
+	}
+
+	/**
+	 * This is run after each unit test.  It empties the database.
+	 */
+	protected function tearDown()
+	{
+		BookstoreDataPopulator::depopulate($this->con);
+		parent::tearDown();
 	}
 
 }

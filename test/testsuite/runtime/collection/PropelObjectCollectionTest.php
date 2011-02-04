@@ -8,7 +8,7 @@
  * @license    MIT License
  */
 
-require_once dirname(__FILE__) . '/../../../tools/helpers/bookstore/BookstoreEmptyTestBase.php';
+require_once 'tools/helpers/bookstore/BookstoreEmptyTestBase.php';
 
 /**
  * Test class for PropelObjectCollection.
@@ -23,17 +23,6 @@ class PropelObjectCollectionTest extends BookstoreEmptyTestBase
 	{
 		parent::setUp();
 		BookstoreDataPopulator::populate($this->con);
-	}
-	
-	public function testContains()
-	{
-		$col = new PropelObjectCollection();
-		$books = PropelQuery::from('Book')->find();
-		$this->assertFalse($col->contains($books[0]));
-		$this->assertFalse($col->contains($books[1]));
-		$col []= $books[0];
-		$this->assertTrue($col->contains($books[0]));
-		$this->assertFalse($col->contains($books[1]));
 	}
 	
 	public function testSave()
@@ -114,7 +103,6 @@ class PropelObjectCollectionTest extends BookstoreEmptyTestBase
 	
 	public function testToArray()
 	{
-		BookPeer::clearInstancePool();
 		$books = PropelQuery::from('Book')->find();
 		$booksArray = $books->toArray();
 		$this->assertEquals(4, count($booksArray));
@@ -138,43 +126,6 @@ class PropelObjectCollectionTest extends BookstoreEmptyTestBase
 		$booksArray = $books->toArray('Title', true);
 		$keys = array('Book_Harry Potter and the Order of the Phoenix', 'Book_Quicksilver', 'Book_Don Juan', 'Book_The Tin Drum');
 		$this->assertEquals($keys, array_keys($booksArray));
-	}
-	
-	public function testToArrayDeep()
-	{
-		$author = new Author();
-		$author->setId(5678);
-		$author->setFirstName('George');
-		$author->setLastName('Byron');
-		$book = new Book();
-		$book->setId(9012);
-		$book->setTitle('Don Juan');
-		$book->setISBN('0140422161');
-		$book->setPrice(12.99);
-		$book->setAuthor($author);
-		
-		$coll = new PropelObjectCollection();
-		$coll->setModel('Book');
-		$coll[]= $book;
-		$expected = array(array(
-			'Id' => 9012,
-			'Title' => 'Don Juan',
-			'ISBN' => '0140422161',
-			'Price' => 12.99,
-			'PublisherId' => null,
-			'AuthorId' => 5678,
-			'Author' => array(
-				'Id' => 5678,
-				'FirstName' => 'George',
-				'LastName' => 'Byron',
-				'Email' => null,
-				'Age' => null,
-				'Books' => array(
-					'Book_0' => '*RECURSION*',
-				)
-			),
-		));
-		$this->assertEquals($expected, $coll->toArray());
 	}
 
 	public function testGetArrayCopy()

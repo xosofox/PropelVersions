@@ -8,9 +8,12 @@
  * @license    MIT License
  */
 
-require_once dirname(__FILE__) . '/../../../tools/helpers/bookstore/BookstoreTestBase.php';
+require_once 'tools/helpers/BaseTestCase.php';
 require_once dirname(__FILE__) . '/../../../../runtime/lib/query/Criteria.php';
 require_once dirname(__FILE__) . '/../../../../runtime/lib/util/BasePeer.php';
+
+set_include_path(get_include_path() . PATH_SEPARATOR . "fixtures/bookstore/build/classes");		
+Propel::init('fixtures/bookstore/build/conf/bookstore-conf.php');
 
 /**
  * Test class for Criteria.
@@ -20,7 +23,7 @@ require_once dirname(__FILE__) . '/../../../../runtime/lib/util/BasePeer.php';
  * @version    $Id: CriteriaTest.php 1347 2009-12-03 21:06:36Z francois $
  * @package    runtime.query
  */
-class CriteriaMergeTest extends BookstoreTestBase
+class CriteriaMergeTest extends BaseTestCase
 {
 	
 	protected function assertCriteriaTranslation($criteria, $expectedSql, $message = '')
@@ -254,7 +257,7 @@ class CriteriaMergeTest extends BookstoreTestBase
 		$c2 = new Criteria();
 		$c2->add(AuthorPeer::FIRST_NAME, 'bar');
 		$c1->mergeWith($c2);
-		$sql = 'SELECT  FROM `book` LEFT JOIN `author` ON (book.AUTHOR_ID=author.ID) WHERE book.TITLE=:p1 AND author.FIRST_NAME=:p2';
+		$sql = 'SELECT  FROM `book` LEFT JOIN author ON (book.AUTHOR_ID=author.ID) WHERE book.TITLE=:p1 AND author.FIRST_NAME=:p2';
 		$this->assertCriteriaTranslation($c1, $sql, 'mergeWith() merges where condition to existing conditions on the different tables');
 	}
 
@@ -292,7 +295,7 @@ class CriteriaMergeTest extends BookstoreTestBase
 		$c2 = new Criteria();
 		$c2->add(AuthorPeer::FIRST_NAME, 'bar');
 		$c1->mergeWith($c2, Criteria::LOGICAL_OR);
-		$sql = 'SELECT  FROM `book` LEFT JOIN `author` ON (book.AUTHOR_ID=author.ID) WHERE (book.TITLE=:p1 OR author.FIRST_NAME=:p2)';
+		$sql = 'SELECT  FROM `book` LEFT JOIN author ON (book.AUTHOR_ID=author.ID) WHERE (book.TITLE=:p1 OR author.FIRST_NAME=:p2)';
 		$this->assertCriteriaTranslation($c1, $sql, 'mergeWith() merges where condition to existing conditions on the different tables');
 	}
 	
@@ -363,14 +366,14 @@ class CriteriaMergeTest extends BookstoreTestBase
 		$c1->mergeWith($c2);
 		$joins = $c1->getJoins();
 		$this->assertEquals(1, count($joins), 'mergeWith() does not remove an existing join');
-		$this->assertEquals('LEFT JOIN author ON (book.AUTHOR_ID=author.ID)', $joins[0]->toString(), 'mergeWith() does not remove an existing join');
+		$this->assertEquals('LEFT JOIN : book.AUTHOR_ID=author.ID(ignoreCase not considered)', $joins[0]->toString(), 'mergeWith() does not remove an existing join');
 		$c1 = new Criteria();
 		$c2 = new Criteria();
 		$c2->addJoin(BookPeer::AUTHOR_ID, AuthorPeer::ID, Criteria::LEFT_JOIN);
 		$c1->mergeWith($c2);
 		$joins = $c1->getJoins();
 		$this->assertEquals(1, count($joins), 'mergeWith() merge joins to an empty join');
-		$this->assertEquals('LEFT JOIN author ON (book.AUTHOR_ID=author.ID)', $joins[0]->toString(), 'mergeWith() merge joins to an empty join');
+		$this->assertEquals('LEFT JOIN : book.AUTHOR_ID=author.ID(ignoreCase not considered)', $joins[0]->toString(), 'mergeWith() merge joins to an empty join');
 		$c1 = new Criteria();
 		$c1->addJoin(BookPeer::AUTHOR_ID, AuthorPeer::ID, Criteria::LEFT_JOIN);
 		$c2 = new Criteria();
@@ -378,8 +381,8 @@ class CriteriaMergeTest extends BookstoreTestBase
 		$c1->mergeWith($c2);
 		$joins = $c1->getJoins();
 		$this->assertEquals(2, count($joins), 'mergeWith() merge joins to an existing join');
-		$this->assertEquals('LEFT JOIN author ON (book.AUTHOR_ID=author.ID)', $joins[0]->toString(), 'mergeWith() merge joins to an empty join');
-		$this->assertEquals('INNER JOIN publisher ON (book.PUBLISHER_ID=publisher.ID)', $joins[1]->toString(), 'mergeWith() merge joins to an empty join');
+		$this->assertEquals('LEFT JOIN : book.AUTHOR_ID=author.ID(ignoreCase not considered)', $joins[0]->toString(), 'mergeWith() merge joins to an empty join');
+		$this->assertEquals('INNER JOIN : book.PUBLISHER_ID=publisher.ID(ignoreCase not considered)', $joins[1]->toString(), 'mergeWith() merge joins to an empty join');
 	}
 
 	public function testMergeWithFurtherModified()

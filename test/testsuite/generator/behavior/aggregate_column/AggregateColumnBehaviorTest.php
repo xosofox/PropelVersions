@@ -9,13 +9,12 @@
  * @license    MIT License
  */
 
-require_once dirname(__FILE__) . '/../../../../tools/helpers/bookstore/BookstoreTestBase.php';
-
+require_once 'tools/helpers/bookstore/BookstoreTestBase.php';
 /**
  * Tests for AggregateColumnBehavior class
  *
  * @author		 François Zaninotto
- * @version		$Revision: 1834 $
+ * @version		$Revision: 1779 $
  * @package		generator.behavior.aggregate_column
  */
 class AggregateColumnBehaviorTest extends BookstoreTestBase 

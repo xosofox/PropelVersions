@@ -8,9 +8,9 @@
  * @license    MIT License
  */
 
-require_once dirname(__FILE__) . '/../BookstoreTestBase.php';
+require_once 'tools/helpers/bookstore/BookstoreTestBase.php';
 
-abstract class BookstoreNestedSetTestBase extends BookstoreTestBase
+class BookstoreNestedSetTestBase extends BookstoreTestBase
 {
 	public function dumpNodes($nodes)
 	{
@@ -136,7 +136,7 @@ class PublicTable9 extends Table9
 	public $hasPrevSibling = null;
 	public $prevSibling = null;
 	public $hasNextSibling = null;
-	public $nextSibling = null;
+	public $nextSibling = null;	
 }
 
 class PublicTable10 extends Table10

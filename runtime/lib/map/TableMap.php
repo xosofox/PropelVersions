@@ -21,7 +21,7 @@
  * @author     Hans Lellelid <hans@xmpl.org> (Propel)
  * @author     John D. McNally <jmcnally@collab.net> (Torque)
  * @author     Daniel Rall <dlr@finemaltcoding.com> (Torque)
- * @version    $Revision: 2168 $
+ * @version    $Revision: 1612 $
  * @package    propel.runtime.map
  */
 class TableMap
@@ -242,7 +242,7 @@ class TableMap
   }
 
   /**
-   * Sets the name of the sequencxe used to generate a key
+   * Sets the pk information needed to generate a key
    *
    * @param      $pkInfo information needed to generate a key
    */
@@ -252,7 +252,7 @@ class TableMap
   }
   
   /**
-   * Get the name of the sequence used to generate a primary key
+   * Get the information used to generate a primary key
    *
    * @return     An Object.
    */
@@ -493,7 +493,7 @@ class TableMap
    * 
    * @param      string $name The relation name
    * @param      string $tablePhpName The related table name
-   * @param      integer $type The relation type (either RelationMap::MANY_TO_ONE, RelationMap::ONE_TO_MANY, or RelationMAp::ONE_TO_ONE)
+   * @param      integer $type The relation type (either RelationMap::MANY_TO_ONE, RelationMap::ONE_TO_MANY, or RelationMAp::ONE_TO_ONE) 
    * @param      array $columnMapping An associative array mapping column names (local => foreign)
    * @return     RelationMap the built RelationMap object
    */

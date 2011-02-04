@@ -8,8 +8,8 @@
  * @license    MIT License
  */
 
-require_once dirname(__FILE__) . '/../../../../tools/helpers/bookstore/BookstoreTestBase.php';
-require_once dirname(__FILE__) . '/../../../../tools/helpers/bookstore/BookstoreDataPopulator.php';
+require_once 'tools/helpers/bookstore/BookstoreTestBase.php';
+require_once 'tools/helpers/bookstore/BookstoreDataPopulator.php';
 
 /**
  * Test class for MultiExtensionQueryBuilder.
@@ -19,7 +19,7 @@ require_once dirname(__FILE__) . '/../../../../tools/helpers/bookstore/Bookstore
  * @package    generator.builder.om
  */
 class QueryBuilderInheritanceTest extends BookstoreTestBase 
-{
+{ 
   
 	public function testConstruct()
 	{
