@@ -1,7 +1,7 @@
 <?php
 
 /*
- *  $Id: PropelSQLTask.php,v 1.2 2004/08/24 01:31:18 hlellelid Exp $
+ *  $Id: PropelSQLTask.php 536 2007-01-10 14:30:38Z heltem $
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -23,184 +23,236 @@
 include_once 'propel/engine/database/model/AppData.php';
 
 /**
- * An extended Capsule task used for generating SQL source from
- * an XML schema describing a database structure.
+ * The task for building SQL DDL based on the XML datamodel.
  *
- * @author Hans Lellelid <hans@xmpl.org> (Propel)
- * @author Jason van Zyl <jvanzyl@periapt.com> (Torque)
- * @author John McNally <jmcnally@collab.net> (Torque)
- * @version $Revision: 1.2 $
- * @package propel.phing
+ * This class uses the new DDLBuilder classes instead of the Capsule PHP templates.
+ *
+ * @author     Hans Lellelid <hans@xmpl.org>
+ * @package    propel.phing
  */
 class PropelSQLTask extends AbstractPropelDataModelTask {
 
-    /**
-     * The properties file that maps an SQL file to a particular database.
-     * @var PhingFile
-     */
-    private $sqldbmap;
-    
-    /**
-     * Name of the database.
-     */
-    private $database;
-    
-    /**
-     * Set the sqldbmap.
-     * @param PhingFile $sqldbmap The db map.
-     */
-    public function setSqlDbMap(PhingFile $sqldbmap)
-    {
-        $this->sqldbmap = $sqldbmap;
-    }
+	/**
+	 * The properties file that maps an SQL file to a particular database.
+	 * @var        PhingFile
+	 */
+	private $sqldbmap;
 
-    /**
-     * Get the sqldbmap.
-     * @return PhingFile $sqldbmap.
-     */
-    public function getSqlDbMap()
-    {
-        return $this->sqldbmap;
-    }
-    
-    /**
-     * Set the database name.
-     * @param string $database
-     */
-    public function setDatabase($database)
-    {
-        $this->database = $database;
-    }
+	/**
+	 * Name of the database.
+	 */
+	private $database;
 
-    /**
-     * Get the database name.
-     * @return string
-     */
-    public function getDatabase()
-    {
-        return $this->database;
-    }
+	/**
+	 * Set the sqldbmap.
+	 * @param      PhingFile $sqldbmap The db map.
+	 */
+	public function setSqlDbMap(PhingFile $sqldbmap)
+	{
+		$this->sqldbmap = $sqldbmap;
+	}
 
-    /**
-     * Create the sql -> database map.
-     *
-     * @throws IOException - if unable to store properties
-     */
-    private function createSqlDbMap()
-    {
-        if ($this->getSqlDbMap() === null) {
-            return;
-        }
+	/**
+	 * Get the sqldbmap.
+	 * @return     PhingFile $sqldbmap.
+	 */
+	public function getSqlDbMap()
+	{
+		return $this->sqldbmap;
+	}
 
-        // Produce the sql -> database map
-        $sqldbmap = new Properties();
+	/**
+	 * Set the database name.
+	 * @param      string $database
+	 */
+	public function setDatabase($database)
+	{
+		$this->database = $database;
+	}
 
-        // Check to see if the sqldbmap has already been created.
-        if ($this->getSqlDbMap()->exists()) {            
-            $sqldbmap->load($this->getSqlDbMap());
-        }
+	/**
+	 * Get the database name.
+	 * @return     string
+	 */
+	public function getDatabase()
+	{
+		return $this->database;
+	}
 
-        $dmMap = $this->getDataModelDbMap();
-        foreach(array_keys($dmMap) as $dataModelName) {           
-            
-            $sqlFile = $this->getMappedFile($dataModelName);
-            
-            if ($this->getDatabase() === null) {
-                $databaseName = $dmMap[$dataModelName];
-            } else {
-                $databaseName = $this->getDatabase();
-            }
+	/**
+	 * Create the sql -> database map.
+	 *
+	 * @throws     IOException - if unable to store properties
+	 */
+	private function createSqlDbMap()
+	{
+		if ($this->getSqlDbMap() === null) {
+			return;
+		}
 
-            $sqldbmap->setProperty($sqlFile->getName(), $databaseName);
-        }
-        
-        try {
-            $sqldbmap->store($this->getSqlDbMap(), "Sqlfile -> Database map");
-        } catch (IOException $e) {
-            throw new IOException("Unable to store properties: ". $e->getMessage());
-        }
-    }    
+		// Produce the sql -> database map
+		$sqldbmap = new Properties();
 
-    public function main() {
-        
-        $this->validate();
-        
-        if(!$this->mapperElement) {
-            throw new BuildException("You must use a <mapper/> element to describe how names should be transformed.");
-        }
-        
-        // 1) first create a map of filenames to databases; this is used by other tasks like
-        // the SQLExec task.
-        $this->createSqlDbMap();
-        
-        // 2) Now actually create the DDL based on the datamodel(s) from XML schema file.
-        $targetDatabase = $this->getTargetDatabase();
-        
-        $basepath = "sql/base/$targetDatabase";
-        
-        $generator = $this->createContext();
-    	$generator->put("basepath", $basepath); // make available to sub-templates		
-                                       
-    
-    	$fname = "sql/base/$targetDatabase/table.tpl" ;
-    	// $generator->put("fname", $fname); // make available to sub-templates
-    
-    	$fnamekeys= "sql/base/$targetDatabase/tablefk.tpl";
-	    //$generator->put("fnamekeys", $fnamekeys); // make available to sub-templates	
+		// Check to see if the sqldbmap has already been created.
+		if ($this->getSqlDbMap()->exists()) {
+			$sqldbmap->load($this->getSqlDbMap());
+		}
 
-        $ddlStartFile = new PhingFile($this->getTemplatePath(), "sql/base/$targetDatabase/database-start.tpl");
-        $ddlEndFile = new PhingFile($this->getTemplatePath(), "sql/base/$targetDatabase/database-end.tpl");
-        
-	    foreach ($this->getDataModels() as $dataModel) {
-            
-            foreach ($dataModel->getDatabases() as $database) {
-                
-                // file we are going to create
-                $outFile = $this->getMappedFile($dataModel->getName());
-                
-                $generator->put("database", $database); // make available to sub-templates
-                $generator->put("platform", $database->getPlatform());
-                
-                $this->log("Generating SQL tables for database: " . $database->getName());
-                
-                $this->log("Writing to SQL file: " . $outFile->getPath());  
-                
-                
-                // this variable helps us overwrite the first time we write to file
-                // and then append thereafter
-                $append=false;
-                
-                // First check to see if there is a "header" SQL file
-                if ($ddlStartFile->exists()) {
-                    $generator->parse($ddlStartFile->getAbsolutePath(), $outFile->getAbsolutePath(), false);
-                    $append = true;
-                }
-                
-                foreach($database->getTables() as $tbl) {        
-                    if (!$tbl->isSkipSql()) {
-                        $this->log("\t + " . $tbl->getName());
-                        $generator->put("table", $tbl);
-                        $generator->parse($fname, $outFile->getAbsolutePath(), $append);
-                        if ($append === false) $append = true;
-                    } else {
-                        $this->log("\t + (skipping) " . $tbl->getName());
-                    }    
-                } // foreach database->getTables()
-            
-                foreach ($database->getTables() as $tbl) {
-                    if (!$tbl->isSkipSql()) {
-                        $generator->put("tablefk", $tbl);
-                        $generator->parse($fnamekeys, $outFile->getAbsolutePath(), true); // always append
-                    }
-                }
-                
-                // Finally check to see if there is a "footer" SQL file
-                if ($ddlEndFile->exists()) {
-                    $generator->parse($ddlEndFile->getAbsolutePath(), $outFile->getAbsolutePath(), true);
-                }
-                
-            } // foreach database        
-        } //foreach datamodels            
-        
-    } // main()
+		if ($this->packageObjectModel) {
+			// in this case we'll get the sql file name from the package attribute
+			$dataModels = $this->packageDataModels();
+			foreach ($dataModels as $package => $dataModel) {
+				foreach ($dataModel->getDatabases() as $database) {
+					$name = ($package ? $package . '.' : '') . 'schema.xml';
+					$sqlFile = $this->getMappedFile($name);
+					$sqldbmap->setProperty($sqlFile->getName(), $database->getName());
+				}
+			}
+		} else {
+			// the traditional way is to map the schema.xml filenames
+			$dmMap = $this->getDataModelDbMap();
+			foreach(array_keys($dmMap) as $dataModelName) {
+				$sqlFile = $this->getMappedFile($dataModelName);
+				if ($this->getDatabase() === null) {
+					$databaseName = $dmMap[$dataModelName];
+				} else {
+					$databaseName = $this->getDatabase();
+				}
+				$sqldbmap->setProperty($sqlFile->getName(), $databaseName);
+			}
+		}
+
+		try {
+			$sqldbmap->store($this->getSqlDbMap(), "Sqlfile -> Database map");
+		} catch (IOException $e) {
+			throw new IOException("Unable to store properties: ". $e->getMessage());
+		}
+	}
+
+	public function main() {
+
+		$this->validate();
+
+		if(!$this->mapperElement) {
+			throw new BuildException("You must use a <mapper/> element to describe how names should be transformed.");
+		}
+
+		if ($this->packageObjectModel) {
+			$dataModels = $this->packageDataModels();
+		} else {
+			$dataModels = $this->getDataModels();
+		}
+
+		// 1) first create a map of filenames to databases; this is used by other tasks like
+		// the SQLExec task.
+		$this->createSqlDbMap();
+
+		// 2) Now actually create the DDL based on the datamodel(s) from XML schema file.
+		$targetDatabase = $this->getTargetDatabase();
+
+		DataModelBuilder::setBuildProperties($this->getPropelProperties());
+		$builderClazz = DataModelBuilder::getBuilderClass('ddl');
+
+		foreach ($dataModels as $package => $dataModel) {
+
+			foreach ($dataModel->getDatabases() as $database) {
+
+				// file we are going to create
+				if (!$this->packageObjectModel) {
+					$name = $dataModel->getName();
+				} else {
+					$name = ($package ? $package . '.' : '') . 'schema.xml';
+				}
+
+				$outFile = $this->getMappedFile($name);
+
+				$this->log("Writing to SQL file: " . $outFile->getPath());
+
+				// First add any "header" SQL
+				$ddl = call_user_func(array($builderClazz, 'getDatabaseStartDDL'));
+
+				foreach($database->getTables() as $table) {
+
+					if (!$table->isSkipSql()) {
+						$builder = DataModelBuilder::builderFactory($table, 'ddl');
+						$this->log("\t+ " . $table->getName() . " [builder: " . get_class($builder) . "]");
+						$ddl .= $builder->build();
+						foreach($builder->getWarnings() as $warning) {
+							$this->log($warning, PROJECT_MSG_WARN);
+						}
+					} else {
+						$this->log("\t + (skipping) " . $table->getName());
+					}
+
+				} // foreach database->getTables()
+
+				// Finally check to see if there is any "footer" SQL
+				$ddl .= call_user_func(array($builderClazz, 'getDatabaseEndDDL'));
+
+
+				// Now we're done.  Write the file!
+				file_put_contents($outFile->getAbsolutePath(), $ddl);
+
+			} // foreach database
+		} //foreach datamodels
+
+	} // main()
+
+	/**
+	 * Packages the datamodels to one datamodel per package
+	 *
+	 * This applies only when the the packageObjectModel option is set. We need to
+	 * re-package the datamodels to allow the database package attribute to control
+	 * which tables go into which SQL file.
+	 *
+	 * @return     array The packaged datamodels
+	 */
+	protected function packageDataModels() {
+
+		static $packagedDataModels;
+
+		if (is_null($packagedDataModels)) {
+
+			$dataModels = $this->getDataModels();
+			$dataModel = array_shift($dataModels);
+			$packagedDataModels = array();
+
+			$platform = $this->getPlatformForTargetDatabase();
+
+			foreach ($dataModel->getDatabases() as $db) {
+				foreach ($db->getTables() as $table) {
+					$package = $table->getPackage();
+					if (!isset($packagedDataModels[$package])) {
+						$dbClone = $this->cloneDatabase($db);
+						$dbClone->setPackage($package);
+						$ad = new AppData($platform);
+						$ad->setName($dataModel->getName());
+						$ad->addDatabase($dbClone);
+						$packagedDataModels[$package] = $ad;
+					}
+					$packagedDataModels[$package]->getDatabase($db->getName())->addTable($table);
+				}
+			}
+		}
+
+		return $packagedDataModels;
+	}
+
+	protected function cloneDatabase($db) {
+
+		$attributes = array (
+			'name' => $db->getName(),
+			'baseClass' => $db->getBaseClass(),
+			'basePeer' => $db->getBasePeer(),
+			//'defaultPhpType' => $db->getDefaultPhpType(),
+			'defaultIdMethod' => $db->getDefaultIdMethod(),
+			'defaultPhpNamingMethod' => $db->getDefaultPhpNamingMethod(),
+			'defaultTranslateMethod' => $db->getDefaultTranslateMethod(),
+			//'heavyIndexing' => $db->getHeavyIndexing(),
+		);
+
+		$clone = new Database();
+		$clone->loadFromXML($attributes);
+		return $clone;
+	}
 }

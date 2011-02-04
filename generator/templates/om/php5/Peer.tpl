@@ -145,12 +145,13 @@ if (!$table->isAlias()) {
 			else $quote = '"';
 			
 			foreach ($col->getChildren() as $child) {
+				$childpkg = ($child->getPackage() ? $child->getPackage() : $package);
 ?> 
 	/** A key representing a particular subclass */
 	const CLASSKEY_<?php echo strtoupper($child->getKey()) ?> = <?php echo $quote . $child->getKey() . $quote ?>;
 
 	/** A class that can be returned by this peer. */
-	const CLASSNAME_<?php echo strtoupper($child->getKey()) ?> = "<?php echo $package . '.' . $child->getClassName() ?>";
+	const CLASSNAME_<?php echo strtoupper($child->getKey()) ?> = "<?php echo $childpkg . '.' . $child->getClassName() ?>";
 <?php	
 			} /* foreach children */
 		} /* if col->isenumerated...() */
@@ -225,6 +226,11 @@ if (!$table->isAlias()) {
 			$criteria->addSelectColumn(<?php echo $table->getPhpName()?>Peer::COUNT_DISTINCT);
 		} else {
 			$criteria->addSelectColumn(<?php echo $table->getPhpName()?>Peer::COUNT);	
+		}
+		// just in case we're grouping: add those columns to the select statement
+		foreach($criteria->getGroupByColumns() as $column)
+		{
+			$criteria->addSelectColumn($column);
 		}
 		
 		$rs = <?php echo $table->getPhpName()?>Peer::doSelectRS($criteria, $con);		
@@ -526,7 +532,8 @@ if (!$table->isAlias() && !$table->isReadOnly()) {
 <?php
 	foreach ($table->getColumns() as $col) {		 
 		if($col->isPrimaryKey()) { ?>
-			$selectCriteria->put(self::<?php echo PeerBuilder::getColumnName($col) ?>, $criteria->remove(self::<?php echo PeerBuilder::getColumnName($col) ?>));
+			$comparison = $criteria->getComparison(self::<?php echo PeerBuilder::getColumnName($col) ?>);
+			$selectCriteria->add(self::<?php echo PeerBuilder::getColumnName($col) ?>, $criteria->remove(self::<?php echo PeerBuilder::getColumnName($col) ?>), $comparison);
 <?php 
 		}  /* if col is prim key */
 	 } /* foreach */
@@ -601,7 +608,8 @@ if (!$table->isAlias() && !$table->isReadOnly()) {
 			// it must be the primary key
 			$criteria = new Criteria(self::DATABASE_NAME);
 <?php	   if (count($table->getPrimaryKey()) == 1) { 
-					$col = array_shift($table->getPrimaryKey()); ?>
+					$pkey = $table->getPrimaryKey();
+					$col = array_shift($pkey); ?>
 			$criteria->add(self::<?php echo PeerBuilder::getColumnName($col) ?>, $values);
 <?php	   } else { ?>
 			// primary key is composite; we therefore, expect
@@ -860,7 +868,8 @@ if (count($table->getPrimaryKey()) === 1) {  ?>
 		
 		$criteria = new Criteria(self::DATABASE_NAME);
 <?php if (count($table->getPrimaryKey()) === 1) { 
-	$col = array_shift($table->getPrimaryKey()); ?>
+	$pkey = $table->getPrimaryKey();
+	$col = array_shift($pkey); ?>
 		$criteria->add(self::<?php echo PeerBuilder::getColumnName($col) ?>, $pk);
 <?php } else { ?>
 
@@ -1083,7 +1092,7 @@ if ($complexObjectModel) {
  
 // ===========================================================
 
-  if ($countFK > 2) {
+  if ($countFK >= 2) {
   
 	$includeJoinAll = true;
 	foreach ($table->getForeignKeys() as $fk) {
@@ -1467,7 +1476,7 @@ if (!$table->isAlias()) {
 	 * @throws PropelException Any exceptions caught during processing will be
 	 *		 rethrown wrapped into a PropelException.
 	 */
-	protected static function getTableMap()
+	public static function getTableMap()
 	{
 		return Propel::getDatabaseMap(self::DATABASE_NAME)->getTable(self::TABLE_NAME);
 	}

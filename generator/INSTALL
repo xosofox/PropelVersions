@@ -18,13 +18,13 @@
 	  files for your data model.  PHP must also have compiled in XML (libxml2, xsl)
 	  support in order to take advantage of all build options.
 
-  	* PHING >= 2.1.0
+  	* PHING >= 2.0.0
 	  Propel uses the PHING build system to build the classes and SQL definition
 	  files for your data model.  PHING is an open-source project build system
 	  based on Apache ANT.  PHING 2 is the (development) version built for PHP5.
 	  See http://phing.tigris.org/ to learn how to install Phing (it's easy).
 	  
-    * Creole >- 1.0.1	  
+    * Creole >- 1.0.0	  
 	  Creole is a Uniform DB API framework for PHP5. Creole is available as a PEAR 
 	  package or can be installed in a more traditional manner. See 
 	  http://creole.phpdb.org/ to get a copy of the Creole classes.
@@ -121,10 +121,11 @@
   $> phing -Dproject=bookstore
   
   Run the 'insert-sql' target which will add the tables to the SQLite db
-  $> phing -Dproject=bookstore -Dtarget=insert-sql
+  $> phing -Dproject=bookstore insert-sql
   
   Run the test script that uses the generated classes against the bookstore db:
-  $> php -qC test/bookstore-test.php
+  $> cd test/
+  $> php -f bookstore-test.php
   
   You should see a bunch of output as it tests use cases.  Hopefully there aren't any 
   "FAILED" messages. If you get a failed message immediately indicating that it can't 
@@ -147,7 +148,7 @@
   Build
   -----
   
-  This assumes that you have already installed and configured a copy of PHING 2.1.
+  This assumes that you have already installed and configured a copy of PHING 2.
 
     % cd /var/www/php/propel/generator  
     % phing -Dproject=mykillerapp    

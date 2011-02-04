@@ -1,6 +1,6 @@
 <?php
 /*
- *  $Id: MaxValueValidator.php,v 1.4 2004/12/04 14:00:38 micha Exp $
+ *  $Id: MaxValueValidator.php 536 2007-01-10 14:30:38Z heltem $
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -35,18 +35,22 @@ require_once 'propel/validator/BasicValidator.php';
  *   </validator>
  * </code>
  *
- * @author Michael Aichler <aichler@mediacluster.de>
- * @version $Revision: 1.4 $
- * @package propel.validator
+ * @author     Michael Aichler <aichler@mediacluster.de>
+ * @version    $Revision: 536 $
+ * @package    propel.validator
  */
 class MaxValueValidator implements BasicValidator
 {
-    
-    /**
-     * @see BasicValidator::isValid()
-     */
-    public function isValid (ValidatorMap $map, $str)
-    {
-        return intval($str) <= intval($map->getValue());
-    }
+
+	/**
+	 * @see        BasicValidator::isValid()
+	 */
+	public function isValid (ValidatorMap $map, $value)
+	{
+		if(is_null($value) == false && is_numeric($value) == true) {
+			return intval($value) <= intval($map->getValue());
+		}
+
+		return false;
+	}
 }

@@ -12,13 +12,24 @@
 
   <property name="build.properties" value="build.properties"/>
   <property name="propel.contextProperties" value="./${build.properties}"/>
-  <property file="./build.properties"/>
+  <property name="propel.home" value="."/>
+  
+  <available file="${propel.home}/build.properties" property="globalBuildPopertiesExists"/>
+  
+  <if> 
+  	<and>
+  		<isset property="globalBuildPopertiesExists"/>
+  	</and>
+  	<then>
+	    <property file="${propel.home}/build.properties"/>
+	</then>	
+  </if>  
 
   <!--
     The default.properties file will map old properties to the new ones along
     with setting the corret defaults.
   -->
-  <property file="default.properties"/>
+  <property file="${propel.home}/default.properties"/>
 
   <!--
     Do forward declarations of all of our tasks to
@@ -26,12 +37,15 @@
   -->
 
   <path id="propelclasses">
-    <pathelement dir="classes/"/>
+    <pathelement dir="${propel.home}/classes/"/>
   </path>
 
   <taskdef
     name="propel-data-model"
     classname="propel.phing.PropelDataModelTask" classpathRef="propelclasses"/>
+  <taskdef
+    name="propel-old-om"
+    classname="propel.phing.PropelOldOMTask" classpathRef="propelclasses"/>
   <taskdef
     name="propel-om"
     classname="propel.phing.PropelOMTask" classpathRef="propelclasses"/>
@@ -50,6 +64,9 @@
   <taskdef
     name="propel-sql"
     classname="propel.phing.PropelSQLTask" classpathRef="propelclasses"/>
+  <taskdef
+    name="propel-old-sql"
+    classname="propel.phing.PropelOldSQLTask" classpathRef="propelclasses"/>
   <taskdef
     name="propel-sql-exec"
     classname="propel.phing.PropelSQLExec" classpathRef="propelclasses"/>
@@ -73,6 +90,15 @@
 
     <phingcall target="sql"/>
     <phingcall target="om"/>
+    <phingcall target="convert-props"/>
+  </target>
+
+  <target
+    name="old-build"
+    description="==> generates sql + [new] om classes">
+
+    <phingcall target="sql"/>
+    <phingcall target="old-om"/>
     <phingcall target="convert-props"/>
   </target>
 
@@ -108,9 +134,33 @@
     </uptodate>
   </target>
 
+  <!--	temporary target to check whether postgres is being used with identifier quoting ON.
+		If so, a warning is issued, since identifier quoting is only paritally implemented & this point.  -->
+  <target name="pgsql-quoting-check">
+  	<if>
+  		<and>
+			<equals arg1="${propel.database}" arg2="pgsql"/>
+			<equals arg1="${propel.disableIdentifierQuoting}" arg2=""/>
+		</and>
+		<then>
+			<warn>ATTENTION: It appears you are using PostgreSQL and you have identifier-quoting turned on.</warn>
+			<warn>It is suggested that you disable identifier quoting when using PostgreSQL -- especially if you</warn>
+			<warn>have case-sensitive columns in your database.</warn>
+			<warn></warn>
+			<warn>To disable identifier quoting, add the following property to your build.properties (or specify</warn>
+			<warn>it using -D on commandline):</warn>
+			<warn></warn>
+			<warn>propel.disableIdentifierQuoting=true</warn>
+			<warn></warn>
+			<warn>You can ignore this warning if you understand the issues related to case-sensitivity and Propel's</warn>
+			<warn>DDL-only implementation of identifier quoting.</warn>
+		</then>
+	</if>
+  </target>
+
   <target
     name="sql"
-    depends="sql-check"
+    depends="sql-check,pgsql-quoting-check"
     unless="propel.internal.sql.uptodate"
     description="==> generates the SQL for your project">
 
@@ -126,16 +176,58 @@
 
   <target name="sql-template">
     <propel-sql
+	  validate="${propel.schema.validate}"
+	  xsd="${propel.schema.xsd.file}"
+	  xsl="${propel.schema.xsl.file}"
       outputDirectory="${propel.sql.dir}"
       sqldbmap="${propel.sql.dir}/sqldb.map"
       targetDatabase="${propel.database}"
-      templatePath="${propel.templatePath}">
+      templatePath="${propel.templatePath}"
+      packageObjectModel="${propel.packageObjectModel}"
+      >
       <mapper type="glob" from="${propel.sql.mapper.from}" to="${propel.sql.mapper.to}"/>
       <schemafileset dir="${propel.schema.dir}"
         includes="${propel.schema.sql.includes}"
         excludes="${propel.schema.sql.excludes}"
       />
     </propel-sql>
+  </target>
+
+
+  <target
+    name="old-sql"
+    depends="sql-check"
+    unless="propel.internal.sql.uptodate"
+    description="==> generates the SQL for your project">
+
+    <echo message="+------------------------------------------+"/>
+    <echo message="|                                          |"/>
+    <echo message="| Generating SQL for YOUR Propel project!  |"/>
+    <echo message="| (using deprecated legacy SQL template)   |"/>
+	<echo message="|                                          |"/>
+    <echo message="+------------------------------------------+"/>
+
+    <phingcall target="old-sql-template"/>
+
+  </target>
+
+  <target name="old-sql-template">
+    <propel-old-sql
+	  validate="${propel.schema.validate}"
+	  xsd="${propel.schema.xsd.file}"
+	  xsl="${propel.schema.xsl.file}"
+      outputDirectory="${propel.sql.dir}"
+      sqldbmap="${propel.sql.dir}/sqldb.map"
+      targetDatabase="${propel.database}"
+      templatePath="${propel.templatePath}"
+      packageObjectModel="${propel.packageObjectModel}"
+      >
+      <mapper type="glob" from="${propel.sql.mapper.from}" to="${propel.sql.mapper.to}"/>
+      <schemafileset dir="${propel.schema.dir}"
+        includes="${propel.schema.sql.includes}"
+        excludes="${propel.schema.sql.excludes}"
+      />
+    </propel-old-sql>
   </target>
 
   <!-- ================================================================ -->
@@ -158,12 +250,17 @@
     description="==> generates the target database">
 
     <propel-data-model
+	  validate="${propel.schema.validate}"
+	  xsd="${propel.schema.xsd.file}"
+	  xsl="${propel.schema.xsl.file}"
       controlTemplate="${propel.template.sqlDbInit}"
       outputDirectory="${propel.sql.dir}"
       outputFile="create-db.sql"
       targetDatabase="${propel.database}"
       dbEncoding="${propel.database.encoding}"
-      templatePath="${propel.templatePath}">
+      templatePath="${propel.templatePath}"
+      packageObjectModel="${propel.packageObjectModel}"
+      >
       <schemafileset dir="${propel.schema.dir}"
         includes="${propel.schema.create-db.includes}"
         excludes="${propel.schema.create-db.excludes}"
@@ -220,6 +317,8 @@
       dbUrl="${propel.database.url}"
       outputFile="${propel.schema.dir}/${propel.default.schema.basename}.xml"
       samePhpName="${propel.samePhpName}"
+      addVendorInfo="${propel.addVendorInfo}"
+      addValidators="${propel.addValidators}"
     />
   </target>
 
@@ -238,13 +337,17 @@
     <echo message="+-----------------------------------------------+"/>
 
     <propel-data-sql
+	  validate="${propel.schema.validate}"
+	  xsd="${propel.schema.xsd.file}"
+	  xsl="${propel.schema.xsl.file}"
       outputDirectory="${propel.sql.dir}"
       sqldbmap="${propel.sql.dir}/sqldb.map"
       dbEncoding="${propel.database.encoding}"
       targetDatabase="${propel.database}"
       templatePath="${propel.templatePath}"
       datadbmap="${propel.schema.dir}/datadb.map"
-      srcDir="${propel.schema.dir}">
+      srcDir="${propel.schema.dir}"
+      >
       <mapper type="glob" from="${propel.datasql.mapper.from}" to="${propel.datasql.mapper.to}"/>
       <schemafileset dir="${propel.schema.dir}"
         includes="${propel.schema.datadtd.includes}"
@@ -268,6 +371,9 @@
     <echo message="+-----------------------------------------------+"/>
 
     <propel-data-dump
+	  validate="${propel.schema.validate}"
+	  xsd="${propel.schema.xsd.file}"
+	  xsl="${propel.schema.xsl.file}"
       targetDatabase="${propel.database}"
       datadbmap="${propel.schema.dir}/datadb.map"
       databaseDriver="${propel.database.driver}"
@@ -300,6 +406,9 @@
     <echo message="+-----------------------------------------------+"/>
 
     <propel-data-dtd
+	  validate="${propel.schema.validate}"
+	  xsd="${propel.schema.xsd.file}"
+	  xsl="${propel.schema.xsl.file}"
       targetDatabase="${propel.database}"
       outputDirectory="${propel.output.dir}"
       templatePath="${propel.templatePath}">
@@ -339,7 +448,7 @@
     <echo message="+------------------------------------------+"/>
     <echo message="|                                          |"/>
     <echo message="| Generating Peer-based Object Model for   |"/>
-    <echo message="| YOUR Propel project!                     |"/>
+    <echo message="| YOUR Propel project! (NEW OM BUILDERS)!  |"/>
     <echo message="|                                          |"/>
     <echo message="+------------------------------------------+"/>
 
@@ -349,6 +458,47 @@
 
   <target name="om-template">
     <propel-om
+	  validate="${propel.schema.validate}"
+	  xsd="${propel.schema.xsd.file}"
+	  xsl="${propel.schema.xsl.file}"
+      outputDirectory="${propel.php.dir}"
+      targetDatabase="${propel.database}"
+      targetPackage="${propel.targetPackage}"
+      templatePath="${propel.templatePath}"
+      targetPlatform="${propel.targetPlatform}"
+      packageObjectModel="${propel.packageObjectModel}"
+      >
+      <schemafileset dir="${propel.schema.dir}"
+        includes="${propel.schema.om.includes}"
+        excludes="${propel.schema.om.excludes}"
+      />
+    </propel-om>
+  </target>
+
+  <!-- the new OM tasks -->
+
+  <target
+    name="old-om"
+    depends="om-check"
+    unless="propel.internal.om.uptodate"
+    description="==> generates the OLD Peer-based object model for your project">
+
+    <echo message="+------------------------------------------+"/>
+    <echo message="|                                          |"/>
+    <echo message="| Generating Peer-based Object Model for   |"/>
+    <echo message="| YOUR Propel project (OLD OM TEMPLATES).  |"/>
+    <echo message="|                                          |"/>
+    <echo message="+------------------------------------------+"/>
+
+    <phingcall target="old-om-template"/>
+    <!--<phingcall target="om-tar"/>-->
+  </target>
+
+  <target name="old-om-template">
+    <propel-old-om
+	  validate="${propel.schema.validate}"
+	  xsd="${propel.schema.xsd.file}"
+	  xsl="${propel.schema.xsl.file}"
       outputDirectory="${propel.php.dir}"
       targetDatabase="${propel.database}"
       targetPackage="${propel.targetPackage}"
@@ -358,8 +508,9 @@
         includes="${propel.schema.om.includes}"
         excludes="${propel.schema.om.excludes}"
       />
-    </propel-om>
+    </propel-old-om>
   </target>
+
 
   <!-- ================================================================== -->
   <!-- P R O P S   T O   P H P   A R R A Y                                -->
@@ -401,7 +552,8 @@
     <propel-graphviz
       outputDirectory="${propel.graph.dir}"
       targetDatabase="${propel.database}"
-      sqldbmap="${propel.sql.dir}/sqldb.map">
+      sqldbmap="${propel.sql.dir}/sqldb.map"
+      packageObjectModel="${propel.packageObjectModel}">
       <mapper type="glob" from="${propel.sql.mapper.from}" to="${propel.sql.mapper.to}"/>
       <schemafileset dir="${propel.schema.dir}"
         includes="${propel.schema.sql.includes}"

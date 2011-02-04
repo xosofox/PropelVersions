@@ -1,17 +1,17 @@
 <?php
 
 // Template for creating an object class.
-// 
+//
 // This is based loosely on the Torque Object.vm Velocity template.
 //
 // $Id: Object.tpl,v 1.23 2005/03/17 01:16:42 hlellelid Exp $
 
- // helper classes 
+ // helper classes
  include_once 'propel/engine/builder/om/PeerBuilder.php';
  include_once 'propel/engine/builder/om/ClassTools.php';
- 
+
 echo '<' . '?' . 'php';
-		
+
 $db = $table->getDatabase();
 if ($table->getPackage()) {
 	$package = $table->getPackage();
@@ -20,7 +20,7 @@ if ($table->getPackage()) {
 }
 
 $parentClass = ClassTools::getBaseClass($table);
-?> 
+?>
 
 require_once '<?php echo ClassTools::getFilePath($parentClass) ?>';
 
@@ -28,18 +28,18 @@ require_once '<?php echo ClassTools::getFilePath($parentClass) ?>';
 $interface = ClassTools::getInterface($table);
 
 if (!empty($interface)) {
-?> 
+?>
 require_once '<?php echo ClassTools::getFilePath($interface) ?>';
 
-<?php 
+<?php
 }
 
 if (!$table->isAlias()) {
 
 	// If any columns in table are BLOB or CLOB then we need to make
-	// sure those classes are included so we can do things like 
+	// sure those classes are included so we can do things like
 	// if ($v instanceof Lob) etc.
-	
+
 	$includes_lobs = false;
 	foreach ($table->getColumns() as $col) {
 		if ($col->isLob()) {
@@ -47,29 +47,29 @@ if (!$table->isAlias()) {
 			break;
 		}
 	}
-	
-	if($includes_lobs) { ?> 
+
+	if($includes_lobs) { ?>
 include_once 'creole/util/Clob.php';
 include_once 'creole/util/Blob.php';
 <?php
 	}
 }
-?> 
+?>
 
 include_once 'propel/util/Criteria.php';
-<?php 
+<?php
 	foreach ($table->getForeignKeys() as $fk) {
 		$tblFK = $table->getDatabase()->getTable($fk->getForeignTableName());
 		$className = $tblFK->getPhpName();
 		if ($tblFK->getInterface()) {
 			$className = $tblFK->getInterface();
 		}
-		
+
 		$tblFKPackage = ($tblFK->getPackage() ? $tblFK->getPackage() : $package);
 		$tblFKPackagePath = strtr($tblFKPackage, '.', '/');
 		if ($tblFKPackagePath != "") {
 			$tblFKPackagePath .= '/';
-		} ?> 
+		} ?>
 
 // (on-demand) include_once '<?php echo ClassTools::getFilePath($tblFKPackage, $className) ?>';
 // (on-demand) include_once '<?php echo ClassTools::getFilePath($tblFKPackage, $tblFK->getPhpName() . 'Peer') ?>';
@@ -89,13 +89,13 @@ include_once '<?php echo ClassTools::getFilePath($package, $table->getPhpName() 
  *
 <?php } ?>
  * You should not use this class directly.  It should not even be
- * extended; all references should be to <?php echo $table->getPhpName() ?> class. 
- * 
+ * extended; all references should be to <?php echo $table->getPhpName() ?> class.
+ *
  * @package <?php echo $package ?> 
  */
 abstract class <?php echo $basePrefix . $table->getPhpName() ?> extends <?php echo ClassTools::classname($parentClass) ?><?php if (!empty($interface)) { ?> implements <?php echo ClassTools::classname($interface) ?><?php } ?> {
-	
-	/** 
+
+	/**
 	 * The Peer class.
 	 * Instance provides a convenient way of calling static methods on a class
 	 * that calling code may not be able to identify.
@@ -108,7 +108,7 @@ abstract class <?php echo $basePrefix . $table->getPhpName() ?> extends <?php ec
 			$cptype = $col->getPhpNative();
 			$clo=strtolower($col->getName());
 			$defVal = "";
-			if (($val = $col->getDefaultValue()) !== null) {				
+			if (($val = $col->getPhpDefaultValue()) !== null) {
 				settype($val, $cptype);
 				$defaultValue = var_export($val, true);
 				$defVal = " = " . $defaultValue;
@@ -117,34 +117,34 @@ abstract class <?php echo $basePrefix . $table->getPhpName() ?> extends <?php ec
 
 	/**
 	 * The value for the <?php echo $clo ?> field.
-	 * @var <?php echo $cptype ?>	  
+	 * @var <?php echo $cptype ?> 
 	 */
-	protected $<?php echo $clo . $defVal ?>;	
+	protected $<?php echo $clo . $defVal ?>;
 <?php		 if ($col->isLazyLoad()) { ?>
-	
+
 	/**
 	 * Whether the lazy-loaded <?php echo $clo ?> value has been loaded from database.
 	 * This is necessary to avoid repeated lookups if <?php echo $clo ?> column is NULL.
 	 * @var boolean
 	 */
 	protected $<?php echo $clo ?>_isLoaded = false;
-<?php 
+<?php
 			}
-		} 
-				
+		}
+
 foreach ($table->getColumns() as $col) {
-	  
+
 	$cfc=$col->getPhpName();
 	$clo=strtolower($col->getName());
-	$cptype = $col->getPhpNative();			  
-	
+	$cptype = $col->getPhpNative();
+
 	$defaultValue = null;
-	if (($val = $col->getDefaultValue()) !== null) {
+	if (($val = $col->getPhpDefaultValue()) !== null) {
 		settype($val, $cptype);
 		$defaultValue = var_export($val, true);
 	}
-	
-	if ($col->getType() === PropelTypes::DATE || $col->getType() === PropelTypes::TIME || $col->getType() === PropelTypes::TIMESTAMP) { 
+
+	if ($col->getType() === PropelTypes::DATE || $col->getType() === PropelTypes::TIME || $col->getType() === PropelTypes::TIMESTAMP) {
 		// these default values are based on the Creole defaults
 		// the date and time default formats are locale-sensitive
 		if ($col->getType() === PropelTypes::DATE) {
@@ -190,11 +190,11 @@ foreach ($table->getColumns() as $col) {
 			return date($format, $ts);
 		}
 	}
-<?php } else { ?>  
+<?php } else { ?>
 	/**
 	 * Get the <?php echo $cfc ?> column value.
 	 * <?php echo $col->getDescription() ?> 
-	 * @return <?php echo $cptype ?>	  
+	 * @return <?php echo $cptype ?> 
 	 */
 	public function get<?php echo $cfc ?>(<?php if ($col->isLazyLoad()) echo '$con = null'; ?>)
 	{
@@ -227,11 +227,11 @@ foreach ($table->getColumns() as $col) {
 			$rs = <?php echo $table->getPhpName()?>Peer::doSelectRS($c, $con);
 			$rs->next();
 <?php
-		$affix = CreoleTypes::getAffix(CreoleTypes::getCreoleCode($col->getType()));									
+		$affix = CreoleTypes::getAffix(CreoleTypes::getCreoleCode($col->getType()));
 		 $clo = strtolower($col->getName());
 		 switch($col->getType()) {
-		 
-			 case PropelTypes::DATE:					
+
+			 case PropelTypes::DATE:
 			 case PropelTypes::TIME:
 			 case PropelTypes::TIMESTAMP:
 			?>
@@ -251,8 +251,8 @@ foreach ($table->getColumns() as $col) {
 <?php } ?>
 <?php
 		if (!$table->isReadOnly()) {
-			
-			
+
+
 			$throwsClause = "";
 			if ($complexObjectModel) {
 				if ($col->isForeignKey()) {
@@ -267,31 +267,31 @@ foreach ($table->getColumns() as $col) {
 			if ($col->getType() === PropelTypes::DATE || $col->getType() === PropelTypes::TIME || $col->getType() === PropelTypes::TIMESTAMP) {
 				$throwsClause = "@throws PropelException - If passed [not-null] date/time is in an invalid format.";
 			}
-			
+
 	?>
 
 	/**
-	 * Set the value of `<?php echo $clo ?>` column.	  
+	 * Set the value of `<?php echo $clo ?>` column.
 	 * <?php echo $col->getDescription() ?> 
-	 * @param <?php echo $cptype  ?> $v new value
+	 * @param <?php echo ($col->getType() === PropelTypes::DATE || $col->getType() === PropelTypes::TIME || $col->getType() === PropelTypes::TIMESTAMP) ? 'mixed' : $cptype  ?> $v new value
 	 * @return void
 	 * <?php echo $throwsClause ?> 
 	 */
 	public function set<?php echo $cfc ?>($v)
 	{
 <?php if ($col->isLazyLoad()) { ?>
-		// explicitly set the is-loaded flag to true for this lazy load col; 
+		// explicitly set the is-loaded flag to true for this lazy load col;
 		// it doesn't matter if the value is actually set or not (logic below) as
 		// any attempt to set the value means that no db lookup should be performed
-		// when the get<?php echo $cfc ?>() method is called. 
+		// when the get<?php echo $cfc ?>() method is called.
 		$this-><?php echo $clo ?>_isLoaded = true;
 <?php } ?>
-<?php 
-	if ($addSaveMethod) { 
-	
-		if ($col->isLob()) {		
+<?php
+	if ($addSaveMethod) {
+
+		if ($col->isLob()) {
 			// Setting of LOB columns gets some special handling
-			
+
 			if ($col->getPropelType() === PropelTypes::BLOB || $col->getPropelType() === PropelTypes::LONGVARBINARY ) {
 				$lobClass = "Blob";
 			} else {
@@ -299,13 +299,13 @@ foreach ($table->getColumns() as $col) {
 			}
 		?>
 		// if the passed in parameter is the *same* object that
-		// is stored internally then we use the Lob->isModified() 
+		// is stored internally then we use the Lob->isModified()
 		// method to know whether contents changed.
 		if ($v instanceof Lob && $v === $this-><?php echo $clo ?>) {
 			$changed = $v->isModified();
 		} else {
 			$changed = ($this-><?php echo $clo ?> !== $v);
-		}				
+		}
 		if ($changed) {
 			if ( !($v instanceof Lob) ) {
 				$obj = new <?php echo $lobClass ?>();
@@ -313,10 +313,10 @@ foreach ($table->getColumns() as $col) {
 			} else {
 				$obj = $v;
 			}
-			$this-><?php echo $clo ?> = $obj;		
+			$this-><?php echo $clo ?> = $obj;
 			$this->modifiedColumns[] = <?php echo PeerBuilder::getColumnName($col, $table->getPhpName()) ?>;
 		}
-<?php   } elseif ($col->getType() === PropelTypes::DATE || $col->getType() === PropelTypes::TIME || $col->getType() === PropelTypes::TIMESTAMP) { 
+<?php   } elseif ($col->getType() === PropelTypes::DATE || $col->getType() === PropelTypes::TIME || $col->getType() === PropelTypes::TIMESTAMP) {
 		// Setting a DATE/TIME value gets some special handling.
 ?>
 		if ($v !== null && !is_int($v)) {
@@ -331,19 +331,19 @@ foreach ($table->getColumns() as $col) {
 			$this-><?php echo $clo ?> = $ts;
 			$this->modifiedColumns[] = <?php echo PeerBuilder::getColumnName($col, $table->getPhpName()) ?>;
 		}
-<?php   } else { 
+<?php   } else {
 		// NORMAL column
 ?>
 		if ($this-><?php echo $clo ?> !== $v<?php if ($defaultValue !== null) { ?> || $v === <?php echo $defaultValue ?><?php } ?>) {
 			$this-><?php echo $clo ?> = $v;
 			$this->modifiedColumns[] = <?php echo PeerBuilder::getColumnName($col, $table->getPhpName()) ?>;
 		}
-		<?php } 
+		<?php }
 	} else { ?>
-		$this-><?php echo $clo ?> = $v;		
-<?php 
+		$this-><?php echo $clo ?> = $v;
+<?php
 	} // if (addSaveMethod)
-	
+
 		if ($complexObjectModel) {
 			if ($col->isForeignKey()) {
 				$tblFK = $table->getDatabase()->getTable($col->getRelatedTableName());
@@ -363,12 +363,12 @@ foreach ($table->getColumns() as $col) {
 				}
 
 	?>
-	
+
 		if ($this-><?php echo $varName ?> !== null && $this-><?php echo $varName ?>->get<?php echo $colFK->getPhpName() ?>() !== $v) {
 			$this-><?php echo $varName ?> = null;
 		}
-	<?php	 } /* if col is foreign key */ 
-	
+	<?php	 } /* if col is foreign key */
+
 		foreach ($col->getReferrers() as $fk) {
 			// used to be getLocalForeignMapping() which did not work.
 			$flmap = $fk->getForeignLocalMapping();
@@ -382,9 +382,9 @@ foreach ($table->getColumns() as $col) {
 					$collName = "coll" . $tblFK->getPhpName() . "s";
 				}
 	?>
-	
+
 		  // update associated <?php echo $tblFK->getPhpName() ?>
-		  
+
 		  if ($this-><?php echo $collName ?> !== null) {
 			  for ($i=0,$size=count($this-><?php echo $collName ?>); $i < $size; $i++) {
 				  $this-><?php echo $collName ?>[$i]->set<?php echo $colFK->getPhpName()?>($v);
@@ -393,15 +393,15 @@ foreach ($table->getColumns() as $col) {
 		<?php } /* if  $tblFk != $table */ ?>
 	  <?php } /* foreach referrers */ ?>
 	<?php } /* if complex object model */ ?>
-	
+
 	}
 
-<?php 
+<?php
 		} /* if !table->isReadOnly() */
 	} /* foreach col */
 ?>
 
-	
+
 	/**
 	 * Hydrates (populates) the object variables with values from the database resultset.
 	 *
@@ -412,21 +412,21 @@ foreach ($table->getColumns() as $col) {
 	 *
 	 * @param ResultSet $rs The ResultSet class with cursor advanced to desired record pos.
 	 * @param int $startcol 1-based offset column which indicates which restultset column to start with.
-	 * @return void
+	 * @return int next starting column
 	 * @throws PropelException  - Any caught Exception will be rewrapped as a PropelException.
 	 */
 	public function hydrate(ResultSet $rs, $startcol = 1)
 	{
 		try {
-<?php 
+<?php
 			$n = 0;
 			foreach($table->getColumns() as $col) {
-				if(!$col->isLazyLoad()) {		
-					$affix = CreoleTypes::getAffix(CreoleTypes::getCreoleCode($col->getType()));									
+				if(!$col->isLazyLoad()) {
+					$affix = CreoleTypes::getAffix(CreoleTypes::getCreoleCode($col->getType()));
 					$clo = strtolower($col->getName());
 					switch($col->getType()) {
-					
-						case PropelTypes::DATE:					
+
+						case PropelTypes::DATE:
 						case PropelTypes::TIME:
 						case PropelTypes::TIMESTAMP:
 					?>
@@ -435,56 +435,58 @@ foreach ($table->getColumns() as $col) {
 							break;
 						default:
 					?>
-			$this-><?php echo $clo?> = $rs->get<?php echo $affix ?>($startcol + <?php echo $n ?>);					
+			$this-><?php echo $clo?> = $rs->get<?php echo $affix ?>($startcol + <?php echo $n ?>);
 <?php
 					}
 					$n++;
 				} // if col->isLazyLoad()
 			} /* foreach */
 		?>
-<?php	   if ($addSaveMethod) { ?>			 
+<?php	   if ($addSaveMethod) { ?>
 			$this->resetModified();
 <?php	   } ?>
 			$this->setNew(false);
-		
+
+      return $startcol + <?php echo $n; ?>;
+
 		} catch (Exception $e) {
 			throw new PropelException("Error populating <?php echo $table->getPhpName()?> object", $e);
-		}		
-	
+		}
+
 	}
-	
+
 	/**
 	 * Builds a Criteria object containing the primary key for this object.
 	 *
 	 * Unlike buildCriteria() this method includes the primary key values regardless
 	 * of whether or not they have been modified.
-	 * 
+	 *
 	 * @return Criteria The Criteria object containing value(s) for primary key(s).
 	 */
 	public function buildPkeyCriteria()
-	{		
+	{
 		$criteria = new Criteria(<?php echo $table->getPhpName()?>Peer::DATABASE_NAME);
-<?php 
+<?php
 				foreach ($table->getColumns() as $col) {
 					$clo = strtolower($col->getName());
 					if ($col->isPrimaryKey()) { ?>
 		$criteria->add(<?php echo PeerBuilder::getColumnName($col, $table->getPhpName()) ?>, $this-><?php echo $clo ?>);
 <?php
-					}  
+					}
 				}
 			?>
-		return $criteria;			
+		return $criteria;
 	}
-	
+
 	/**
 	 * Build a Criteria object containing the values of all modified columns in this object.
 	 *
 	 * @return Criteria The Criteria object containing all modified values.
 	 */
 	public function buildCriteria()
-	{		
+	{
 		$criteria = new Criteria(<?php echo $table->getPhpName()?>Peer::DATABASE_NAME);
-<?php 
+<?php
 				foreach ($table->getColumns() as $col) {
 					$clo = strtolower($col->getName());
 					?>
@@ -492,11 +494,11 @@ foreach ($table->getColumns() as $col) {
 <?php
 				}
 			?>
-		return $criteria;			
+		return $criteria;
 	}
-	
+
 <?php } /* if !table->isAlias */ ?>
-	
+
 <?php
 
  // association code
@@ -509,13 +511,13 @@ if ($complexObjectModel) {
 
 		$tblFK = $table->getDatabase()->getTable($fk->getForeignTableName());
 		$className = $tblFK->getPhpName();
-		
+
 		$tblFKPackage = ($tblFK->getPackage() ? $tblFK->getPackage() : $package);
 		$tblFKPackagePath = strtr($tblFKPackage, '.', '/');
 		if ($tblFKPackagePath != "") {
 			$tblFKPackagePath .= '/';
-		} 
-		
+		}
+
 		$relCol = "";
 		foreach ($fk->getLocalColumns() as $columnName) {
 			$column = $table->getColumn($columnName);
@@ -535,7 +537,7 @@ if ($complexObjectModel) {
 ?>
 
 	/**
-	 * @var <?php echo $className ?>	  
+	 * @var <?php echo $className ?> 
 	 */
 	protected $<?php echo $varName ?>;
 
@@ -554,16 +556,16 @@ if ($complexObjectModel) {
 			$lfmap = $fk->getLocalForeignMapping();
 			$colFKName = $lfmap[$columnName];
 			$colFK = $tblFK->getColumn($colFKName); ?>
-			
+
 		if ($v === null) {
-			$this->set<?php echo $column->getPhpName() ?>(<?php var_export($column->getDefaultValue()) ?>);
+			$this->set<?php echo $column->getPhpName() ?>(<?php var_export($column->getPhpDefaultValue()) ?>);
 		} else {
 			$this->set<?php echo $column->getPhpName() ?>($v->get<?php echo $colFK->getPhpName() ?>());
 		}
-<?php 
+<?php
 		} /* foreach local col */
 ?>
-   
+
 		$this-><?php echo $varName ?> = $v;
 	}
 
@@ -589,7 +591,7 @@ if ($complexObjectModel) {
 		$comma = ", ";
 		$argsize = $argsize + 1;
    }
-   
+
    $pCollName = $table->getPhpName() . 's' . $relCol;
 ?>
 
@@ -613,15 +615,15 @@ if ($complexObjectModel) {
 
 			$this-><?php echo $varName ?> = <?php echo $className ?>Peer::retrieve<?php echo $className ?>ByPK(<?php echo $arglist ?>, $con);
 	<?php	} else { ?>
-	
+
 			$this-><?php echo $varName ?> = <?php echo $className ?>Peer::retrieve<?php echo $className ?>ByPK(<?php echo $arglist ?>, $con);
-	<?php	} 
-		} else { 
+	<?php	}
+		} else {
 			if ($argsize > 1) { ?>
 
 			$this-><?php echo $varName ?> = <?php echo $className ?>Peer::retrieveByPK(<?php echo $arglist ?>, $con);
 	<?php	} else { ?>
-	
+
 			$this-><?php echo $varName ?> = <?php echo $className ?>Peer::retrieveByPK(<?php echo $arglist ?>, $con);
 	<?php }
 		} // if tblFK->isAlias ?>
@@ -644,19 +646,19 @@ if ($complexObjectModel) {
 	 * key.  e.g.
 	 * <code>$bar->setFooKey($foo->getPrimaryKey())</code>
 	 *
-<?php if (count($fk->getLocalColumns()) > 1) { ?> 
+<?php if (count($fk->getLocalColumns()) > 1) { ?>
 	 * Note: It is important that the xml schema used to create this class
 	 * maintains consistency in the order of related columns between
 	 * <?php echo $table->getName() ?> and <?php echo $tblFK->getName() ?>.
 	 * If for some reason this is impossible, this method should be
 	 * overridden in <code><?php echo $table->getPhpName() ?></code>.
-<?php } ?> 
+<?php } ?>
 	 * @return void
 	 * @throws PropelException
 	 */
 	public function set<?php echo $pVarName ?>Key($key)
 	{
-<?php if (count($fk->getLocalColumns()) > 1) { 
+<?php if (count($fk->getLocalColumns()) > 1) {
 		$i = 0;
 		foreach ($fk->getLocalColumns() as $colName) {
 			$col = $table->getColumn($colName);
@@ -664,7 +666,7 @@ if ($complexObjectModel) {
 ?>
 
 			$this->set<?php echo $col->getPhpName() ?>( (<?php echo $fktype ?>) $key[<?php echo $i ?>] );
-<?php		
+<?php
 			$i++;
 		} /* foreach */
 	} else {
@@ -674,11 +676,11 @@ if ($complexObjectModel) {
 		$fktype = $col->getPhpNative();
 ?>
 
-		$this->set<?php echo $col->getPhpName() ?>( (<?php echo $fktype ?>) $key);			
+		$this->set<?php echo $col->getPhpName() ?>( (<?php echo $fktype ?>) $key);
 	<?php } ?>
-	
+
 	}
-<?php } /*  end of foreach loop over foreign keys */ 
+<?php } /*  end of foreach loop over foreign keys */
 
  //
  // setup foreign key associations
@@ -717,10 +719,10 @@ if ($complexObjectModel) {
 ?>
 
 	/**
-	 * Collection to store aggregation of <?php echo $collName ?>	  
+	 * Collection to store aggregation of <?php echo $collName ?> 
 	 * @var array
 	 */
-	protected $<?php echo $collName ?>; 
+	protected $<?php echo $collName ?>;
 
 	/**
 	 * Temporary storage of <?php echo $collName ?> to save a possible db hit in
@@ -756,6 +758,37 @@ if ($complexObjectModel) {
 	private $last<?php echo $relCol ?>Criteria = null;
 
 	/**
+	 * Returns the number of related <?php echo $relCol ?> 
+	 *
+	 * @param Criteria $criteria
+	 * @param boolean $distinct
+	 * @param Connection $con
+	 * @throws PropelException
+	 */
+	public function count<?php echo $relCol ?>($criteria = null, $distinct = false, $con = null)
+	{
+		// include the Peer class
+		include_once '<?php echo $tblFKPackagePath . $className ?>Peer.php';
+		if ($criteria === null) {
+			$criteria = new Criteria();
+		}
+<?php
+	foreach ($fk->getForeignColumns() as $columnName) {
+		$column = $table->getColumn($columnName);
+		// used to be getLocalForeignMapping() but that didn't seem to work
+		// (maybe a problem in translation of HashTable code to PHP).
+		$flmap = $fk->getForeignLocalMapping();
+		$colFKName = $flmap[$columnName];
+		$colFK = $tblFK->getColumn($colFKName);
+?>
+		$criteria->add(<?php echo PeerBuilder::getColumnName($colFK, $className) ?>, $this->get<?php echo $column->getPhpName() ?>() );
+<?php
+	} // end foreach ($fk->getForeignColumns()
+?>
+		return <?php echo $className ?>Peer::doCount($criteria, $distinct, $con);
+	}
+
+	/**
 	 * If this collection has already been initialized with
 	 * an identical criteria, it returns the collection.
 	 * Otherwise if this <?php echo $table->getPhpName() ?> has previously
@@ -775,7 +808,7 @@ if ($complexObjectModel) {
 		if ($criteria === null) {
 			$criteria = new Criteria();
 		}
-				
+
 		if ($this-><?php echo $collName ?> === null) {
 			if ($this->isNew()) {
 			   $this-><?php echo $collName ?> = array();
@@ -789,9 +822,9 @@ if ($complexObjectModel) {
 		$colFKName = $flmap[$columnName];
 		$colFK = $tblFK->getColumn($colFKName);
 ?>
-	
+
 				$criteria->add(<?php echo PeerBuilder::getColumnName($colFK, $className) ?>, $this->get<?php echo $column->getPhpName() ?>() );
-<?php 
+<?php
 	} // end foreach ($fk->getForeignColumns()
 ?>
 
@@ -812,7 +845,7 @@ if ($complexObjectModel) {
 ?>
 
 				$criteria->add(<?php echo PeerBuilder::getColumnName($colFK, $className) ?>, $this->get<?php echo $column->getPhpName() ?>());
-<?php 
+<?php
 	} // foreach ($fk->getForeignColumns()
 ?>
 
@@ -825,7 +858,7 @@ if ($complexObjectModel) {
 
 		return $this-><?php echo $collName ?>;
 	}
-	
+
 <?php
 	$countFK = 0;
 	foreach ($tblFK->getForeignKeys() as $dummyFK) {
@@ -868,7 +901,7 @@ if ($complexObjectModel) {
 			// do not generate code for self-referencing fk's, it would be
 			// good to do, but it is just not implemented yet.
 			if ($className == $fkClassName) {
-				// $doJoinGet = false;  -- SELF REFERENCING FKs UNDER TESTING 
+				// $doJoinGet = false;  -- SELF REFERENCING FKs UNDER TESTING
 			}
 
 			if ($relatedByCol2 == "") {
@@ -906,20 +939,20 @@ if ($complexObjectModel) {
 		if ($criteria === null) {
 			$criteria = new Criteria();
 		}
-		
+
 		if ($this-><?php echo $collName ?> === null) {
 			if ($this->isNew()) {
 			   $this-><?php echo $collName ?> = array();
 			} else {
-<?php   
-		foreach ($fk->getForeignColumns() as $columnName) { 
+<?php
+		foreach ($fk->getForeignColumns() as $columnName) {
 			$column = $table->getColumn($columnName);
 			$flMap = $fk->getForeignLocalMapping();
 			$colFKName = $flMap[$columnName];
 			$colFK = $tblFK->getColumn($colFKName);
-?>	   
+?>
 				$criteria->add(<?php echo PeerBuilder::getColumnName($colFK, $className) ?>, $this->get<?php echo $column->getPhpName() ?>());
-<?php 
+<?php
 		} // end foreach ($fk->getForeignColumns()
 ?>
 				$this-><?php echo $collName ?> = <?php echo $className ?>Peer::doSelectJoin<?php echo $relCol2 ?>($criteria, $con);
@@ -928,15 +961,15 @@ if ($complexObjectModel) {
 			// the following code is to determine if a new query is
 			// called for.  If the criteria is the same as the last
 			// one, just return the collection.
-<?php   
+<?php
 			foreach ($fk->getForeignColumns() as $columnName) {
 				$column = $table->getColumn($columnName);
 				$flMap = $fk->getForeignLocalMapping();
-				$colFKName = $flMap[$columnName];	   
+				$colFKName = $flMap[$columnName];
 				$colFK = $tblFK->getColumn($colFKName);
-?>	  
+?>
 			$criteria->add(<?php echo PeerBuilder::getColumnName($colFK, $className) ?>, $this->get<?php echo $column->getPhpName() ?>());
-<?php 
+<?php
 			} /* end foreach ($fk->getForeignColumns() */
 ?>
 			if (!isset($this->last<?php echo $relCol ?>Criteria) || !$this->last<?php echo $relCol ?>Criteria->equals($criteria)) {
@@ -947,64 +980,132 @@ if ($complexObjectModel) {
 
 		return $this-><?php echo $collName ?>;
 	}
-<?php 
+<?php
 	} /* end if($doJoinGet) */
-	
+
 	} /* end foreach ($tblFK->getForeignKeys() as $fk2) { */
 	} /* end if countFK >= 1 */
 
 	} /*ends foreach over table->getReferrers() */
 
-} /* the if(complexObjectModel) */ 
+} /* the if(complexObjectModel) */
 
 //
-// getByName code
+// add GenericAccessors or GenericMutators?
 //
-if (!$table->isAlias() && $addGenericAccessors) {
+if (!$table->isAlias() && ($addGenericAccessors || ($addGenericMutators && !$table->isReadOnly())))
+{
 ?>
 
-	private $fieldNames;
+	/**
+	 * phpname type
+	 * e.g. 'AuthorId'
+	 */
+	const TYPE_PHPNAME = 'phpName';
 
 	/**
-	 * Generate a list of field names.
+	 * column (peer) name type
+	 * e.g. 'book.AUTHOR_ID'
+	 */
+	const TYPE_COLNAME = 'colName';
+
+	/**
+	 * column fieldname type
+	 * e.g. 'author_id'
+	 */
+	const TYPE_FIELDNAME = 'fieldName';
+
+	/**
+	 * num type
+	 * simply the numerical array index, e.g. 4
+	 */
+	const TYPE_NUM = 'num';
+<?php
+	$tableColumns = $table->getColumns();
+	$tablePhpname = $table->getPhpName();
+?>
+
+	/**
+	 * holds an array of fieldnames
 	 *
+	 * first dimension keys are the type constants
+	 * e.g. self::$fieldNames[self::TYPE_PHPNAME][0] = 'Id'
+	 */
+	private static $fieldNames = array (
+		<?php echo $basePrefix . $table->getPhpName() ?>::TYPE_PHPNAME => array (<?php foreach ($tableColumns as $col) { ?>'<?php echo $col->getPhpName(); ?>', <?php } ?>),
+		<?php echo $basePrefix . $table->getPhpName() ?>::TYPE_COLNAME => array (<?php foreach ($tableColumns as $col) { ?><?php echo PeerBuilder::getColumnName($col, $tablePhpname); ?>, <?php } ?>),
+		<?php echo $basePrefix . $table->getPhpName() ?>::TYPE_FIELDNAME => array (<?php foreach ($tableColumns as $col) { ?>'<?php echo $col->getName(); ?>', <?php } ?>),
+		<?php echo $basePrefix . $table->getPhpName() ?>::TYPE_NUM => array (<?php foreach ($tableColumns as $num => $col) { echo $num; ?>, <?php } ?>)
+	);
+
+	/**
+	 * holds an array of keys for quick access to the fieldnames array
+	 *
+	 * first dimension keys are the type constants
+	 * e.g. self::$fieldNames[self::TYPE_PHPNAME]['Id'] = 0
+	 */
+	private static $fieldKeys = array (
+		<?php echo $basePrefix . $table->getPhpName() ?>::TYPE_PHPNAME => array (<?php foreach ($tableColumns as $num => $col) { ?>'<?php echo $col->getPhpName(); ?>' => <?php echo $num; ?>, <?php } ?>),
+		<?php echo $basePrefix . $table->getPhpName() ?>::TYPE_COLNAME => array (<?php foreach ($tableColumns as $num => $col) { ?><?php echo PeerBuilder::getColumnName($col, $tablePhpname); ?> => <?php echo $num; ?>, <?php } ?>),
+		<?php echo $basePrefix . $table->getPhpName() ?>::TYPE_FIELDNAME => array (<?php foreach ($tableColumns as $num => $col) { ?>'<?php echo $col->getName(); ?>' => <?php echo $num; ?>, <?php } ?>),
+		<?php echo $basePrefix . $table->getPhpName() ?>::TYPE_NUM => array (<?php foreach ($tableColumns as $num => $col) { echo $num; ?>, <?php } ?>)
+	);
+
+	/**
+	 * Returns an array of of field names.
+	 *
+	 * @param  string $type The type of fieldnames to return:
+	 *                      One of the class type constants TYPE_PHPNAME,
+	 *                      TYPE_COLNAME, TYPE_FIELDNAME, TYPE_NUM
 	 * @return array A list of field names
 	 */
-	public function getFieldNames()
+
+	static public function getFieldNames($type = self::TYPE_FIELDNAME)
 	{
-		if ($this->fieldNames === null) {
-			$this->fieldNames = array(<?php foreach ($table->getColumns() as $col) { ?>"<?php echo $col->getName() ?>", <?php } ?>);
+		if (!isset(self::$fieldNames[$type])) {
+			throw new PropelException('Method getFieldNames() expects the parameter $type to be one of the class constants TYPE_PHPNAME, TYPE_COLNAME, TYPE_FIELDNAME, TYPE_NUM. ' . $type . ' was given.');
 		}
-		return $this->fieldNames;
-	}
-	
-	/**
-	 * Retrieves a field from the object by name passed in as a string.
-	 * The string must be one of the static strings defined in this Class' Peer.
-	 *
-	 * @param string $name peer name
-	 * @return mixed Value of field.
-	 */
-	public function getByName($name)
-	{
-		switch($name) {
-<?php	
-	foreach ($table->getColumns() as $col) {
-	  $cfc = $col->getPhpName();
-	  $cptype = $col->getPhpNative(); // not safe to use it because some methods may return objects (Blob)
-?>	  
-			case <?php echo PeerBuilder::getColumnName($col,$table->getPhpName()) ?>:
-				return $this->get<?php echo $cfc ?>();
-				break;
-	<?php } ?>  
-			default:
-				return null;
-				
-		} // switch()
+		return self::$fieldNames[$type];
 	}
 
 	/**
-	 * Retrieves a field from the object by Position as specified in the xml schema. 
+	 * Translates a fieldname to another type
+	 *
+	 * @param string $name field name
+	 * @param string $fromType One of the class type constants TYPE_PHPNAME,
+	 *                         TYPE_COLNAME, TYPE_FIELDNAME, TYPE_NUM
+	 * @param string $toType   One of the class type constants
+	 * @return string translated name of the field.
+	 */
+	static public function translateFieldName($name, $fromType, $toType)
+	{
+		$toNames = self::getFieldNames($toType);
+		$key = self::$fieldKeys[$fromType][$name];
+		if ($key === false) {
+			throw new PropelException("'$name' could not be found in the field names of type '$fromType'. These are: " . print_r($fromNames, true));
+		}
+		return $toNames[$key];
+	}
+<?php if ($addGenericAccessors) { ?>
+
+	/**
+	 * Retrieves a field from the object by name passed in as a string.
+	 *
+	 * @param string $name name
+	 * @param string $type The type of fieldname the $name is of:
+	 *                     one of the class type constants TYPE_PHPNAME,
+	 *                     TYPE_COLNAME, TYPE_FIELDNAME, TYPE_NUM
+	 * @return mixed Value of field.
+	 */
+	public function getByName($name, $type = self::TYPE_COLNAME)
+	{
+		$names = self::getFieldNames($type);
+		$pos = self::translateFieldName($name, $type, self::TYPE_NUM);
+		return $this->getByPosition($pos);
+	}
+
+	/**
+	 * Retrieves a field from the object by Position as specified in the xml schema.
 	 * Zero-based.
 	 *
 	 * @param int $pos position in xml schema
@@ -1013,73 +1114,68 @@ if (!$table->isAlias() && $addGenericAccessors) {
 	public function getByPosition($pos)
 	{
 		switch($pos) {
-<?php	
-	$i = 0;
-	foreach ($table->getColumns() as $col) {
-		$cfc = $col->getPhpName();
-		$cptype = $col->getPhpNative();// not safe to use it because some methods may return objects (Blob)
-?>  
+<?php
+		$i = 0;
+		foreach ($table->getColumns() as $col) {
+			$cfc = $col->getPhpName();
+			$cptype = $col->getPhpNative();// not safe to use it because some methods may return objects (Blob)
+?>
 			case <?php echo $i ?>:
 				return $this->get<?php echo $cfc ?>();
 				break;
 <?php
-		$i++;
-	} /* foreach */
+			$i++;
+		} /* foreach */
 ?>
 			default:
 				return null;
 		} // switch()
 	}
 
-<?php } /* ends the if(addGetByNameMethod) */ ?>
-
-
-<?php if (!$table->isAlias() && $addGenericMutators && !$table->isReadOnly()) { ?>
-	
 	/**
-	 * Convenience method to populate the object using an array.
-	 * This is particularly useful when populating an object from one of the request arrays (e.g. $_POST).  This method
-	 * goest through the column (peer) names, checking to see whether a matching key exists in populated array. If
-	 * so the setByName() method is called for that column.
-	 * @param array $arr An array where keys are column names.
-	 * @return void
+	 * Exports the object as an array.
+	 *
+	 * You can specify the key type of the array by passing one of the class
+	 * type constants.
+	 *
+	 * @param string $keyType One of the class type constants TYPE_PHPNAME,
+	 *                        TYPE_COLNAME, TYPE_FIELDNAME, TYPE_NUM
+	 * @return an associative array containing the field names (as keys) and field values
 	 */
-	public function populateFromArray($arr)
+	public function toArray($keyType = self::TYPE_PHPNAME)
 	{
-<?php	
-	foreach ($table->getColumns() as $col) {
-	  $cfc = $col->getPhpName();
-	  $cptype = $col->getPhpNative();
-?>  
-		if (array_key_exists(<?php echo PeerBuilder::getColumnName($col,$table->getPhpName()) ?>, $arr)) $this->set<?php echo $cfc ?>($arr[<?php echo PeerBuilder::getColumnName($col,$table->getPhpName()) ?>]);
-<?php 
-	} /* foreach */
-?> 
+		$keys = self::getFieldNames($keyType);
+		$result = array(
+<?php
+		foreach ($table->getColumns() as $num => $col) {
+?>
+			$keys[<?php echo $num; ?>] => $this->get<?php echo $col->getPhpName(); ?>(),
+<?php
+		} /* foreach */
+?>
+		);
+		return $result;
 	}
-	
+<?php } /* ends the if($addGenericAccessors) */ ?>
+
+
+<?php if ($addGenericMutators && !$table->isReadOnly()) { ?>
+
 	/**
 	 * Sets a field from the object by name passed in as a string.
-	 * The string must be one of the static strings defined in this Class' Peer.
 	 *
 	 * @param string $name peer name
 	 * @param mixed $value field value
+	 * @param string $type The type of fieldname the $name is of:
+	 *                     one of the class type constants TYPE_PHPNAME,
+	 *                     TYPE_COLNAME, TYPE_FIELDNAME, TYPE_NUM
 	 * @return void
 	 */
-	public function setByName($name, $value)
+	public function setByName($name, $value, $type = self::TYPE_COLNAME)
 	{
-		switch($name) {
-<?php	
-	foreach ($table->getColumns() as $col) {
-	  $cfc = $col->getPhpName();
-	  $cptype = $col->getPhpNative();
-?>	  
-			case <?php echo PeerBuilder::getColumnName($col,$table->getPhpName()) ?>:
-				$this->set<?php echo $cfc ?>($value);
-				break;
-<?php 
-	} /* foreach */
-?>				  
-		} // switch()
+		$names = $this->getFieldnames($type);
+		$pos = array_search($name, $names);
+		return $this->setByPosition($pos, $value);
 	}
 
 	/**
@@ -1093,28 +1189,78 @@ if (!$table->isAlias() && $addGenericAccessors) {
 	public function setByPosition($pos, $value)
 	{
 		switch($pos) {
-<?php	
-	$i = 0;
-	foreach ($table->getColumns() as $col) {
-		$cfc = $col->getPhpName();
-		$cptype = $col->getPhpNative();
-?>  
+<?php
+		$i = 0;
+		foreach ($table->getColumns() as $col) {
+			$cfc = $col->getPhpName();
+			$cptype = $col->getPhpNative();
+?>
 			case <?php echo $i ?>:
 				$this->set<?php echo $cfc ?>($value);
 				break;
 <?php
-	$i++;
-	} /* foreach */
+			$i++;
+		} /* foreach */
 ?>
 		} // switch()
 	}
 
-<?php } /* ends the if($addGenericMutators) */ ?>
+	/**
+	 * Populates the object using an array.
+	 *
+	 * This method is just an alias for populateFromArray()
+	 *
+	 * @param array  $arr     An array to populate the object from.
+	 * @param string $keyType The type of keys the array uses:
+	 *                        one of the class type constants TYPE_PHPNAME,
+	 *                        TYPE_COLNAME, TYPE_FIELDNAME, TYPE_NUM
+	 * @return void
+	 */
+	public function fromArray($arr, $keyType = self::TYPE_COLNAME)
+	{
+		return $this->populateFromArray($arr, $keyType);
+	}
 
-<?php if (!$table->isAlias() && isset($addSaveMethod) && $addSaveMethod && !$table->isReadOnly()) { ?> 
+	/**
+	 * Populates the object using an array.
+	 *
+	 * This is particularly useful when populating an object from one of the
+	 * request arrays (e.g. $_POST).  This method goes through the column
+	 * names, checking to see whether a matching key exists in populated
+	 * array. If so the setByName() method is called for that column.
+	 *
+	 * You can specify the key type of the array by additionally passing one
+	 * of the class type constants TYPE_PHPNAME, TYPE_COLNAME, TYPE_FIELDNAME,
+	 * TYPE_NUM. The default key type is the (peer) column name (e.g.
+	 * 'book.AUTHOR_ID')
+	 *
+	 * @param array  $arr     An array to populate the object from.
+	 * @param string $keyType The type of keys the array uses.
+	 * @return void
+	 */
+	public function populateFromArray($arr, $keyType = self::TYPE_COLNAME)
+	{
+		$keys = self::getFieldNames($keyType);
+<?php
+		foreach ($table->getColumns() as $num => $col) {
+			$cfc = $col->getPhpName();
+	  		$cptype = $col->getPhpNative();
+?>
+		if (array_key_exists($keys[<?php echo $num ?>], $arr)) $this->set<?php echo $cfc ?>($arr[$keys[<?php echo $num ?>]]);
+<?php
+		} /* foreach */
+?>
+	}
+
+<?php } /* ends the if($addGenericMutators) */
+	} /* ends the if($addGenericAccessors || $addGenericMutators) */
+?>
+
+<?php if (!$table->isAlias() && isset($addSaveMethod) && $addSaveMethod && !$table->isReadOnly()) { ?>
+
 	/**
 	 * Removes this object from datastore and sets delete attribute.
-	 * 
+	 *
 	 * @param Connection $con
 	 * @return void
 	 * @throws PropelException
@@ -1122,11 +1268,11 @@ if (!$table->isAlias() && $addGenericAccessors) {
 	 * @see BaseObject::isDeleted()
 	 */
 	public function delete($con = null)
-	{	
+	{
 		if ($this->isDeleted()) {
 			throw new PropelException("This object has already been deleted.");
 		}
-		
+
 		if ($con === null)
 			$con = Propel::getConnection(<?php echo $table->getPhpName()?>Peer::DATABASE_NAME);
 
@@ -1140,7 +1286,7 @@ if (!$table->isAlias() && $addGenericAccessors) {
 			throw $e;
 		}
 	}
-	
+
 <?php
 if ($complexObjectModel) {
 ?>
@@ -1166,23 +1312,23 @@ if ($complexObjectModel) {
 		if ($this->isDeleted()) {
 			throw new PropelException("You cannot save an object that has been deleted.");
 		}
-		
+
 		if ($con === null)
 			$con = Propel::getConnection(<?php echo $table->getPhpName()?>Peer::DATABASE_NAME);
 
 		try {
 			$con->begin();
-			$this->doSave($con);			
+			$this->doSave($con);
 			$con->commit();
 		} catch (PropelException $e) {
 			$con->rollback();
 			throw $e;
 		}
 	}
-<?php 
+<?php
 } /* if ($complexObjectModel) */
 ?>
-  
+
 	/**
 	 * Stores the object in the database.  If the object is new,
 	 * it inserts it; otherwise an update is performed.
@@ -1191,32 +1337,32 @@ if ($complexObjectModel) {
 	 * @return void
 	 * @throws PropelException
 	 */
-<?php 
+<?php
 if($complexObjectModel) {
 ?>
-		protected function doSave($con)<?php 
+		protected function doSave($con)<?php
 } else {
 ?>
-		public function save($con = null)<?php 
+		public function save($con = null)<?php
 }
 ?>
-	{ 
-		
-<?php 
+	{
+
+<?php
 if(!$complexObjectModel) {
 ?>		if ($this->isDeleted()) {
 			throw new PropelException("You cannot save an object that has been deleted.");
 		}
-	
-		if ($con === null) {	
+
+		if ($con === null) {
 			$con = Propel::getConnection(<?php echo $basePrefix . $table->getPhpName() ?>Peer::DATABASE_NAME);
 		}
-<?php 
+<?php
 }
-	
+
 if ($complexObjectModel) {
 ?>
-	 
+
 		if (!$this->alreadyInSave) {
 			$this->alreadyInSave = true;
 <?php
@@ -1227,15 +1373,15 @@ if ($complexObjectModel) {
 			// were passed to this object by their coresponding set
 			// method.  This object relates to these object(s) by a
 			// foreign key reference.
-<?php 
-		for($i=0,$_i=count($aVars); $i < $_i; $i++) { 
-			$aVarName = $aVars[$i];				
-?> 
+<?php
+		for($i=0,$_i=count($aVars); $i < $_i; $i++) {
+			$aVarName = $aVars[$i];
+?>
 			if ($this-><?php echo $aVarName ?> !== null) {
 				if ($this-><?php echo $aVarName ?>->isModified()) $this-><?php echo $aVarName ?>->save($con);
 				$this->set<?php echo $pVars[$i] ?>($this-><?php echo $aVarName ?>);
 			}
-<?php 
+<?php
 		} /* foreach */
 	} /* if count(pVars) != 0 */
 } /* if complexObjectMode */
@@ -1245,8 +1391,8 @@ if ($complexObjectModel) {
 			if ($this->isModified()) {
 				if ($this->isNew()) {
 					$pk = <?php echo $table->getPhpName() ?>Peer::doInsert($this, $con);
-<?php 
-	if ($table->getIdMethod() != "none") { 
+<?php
+	if ($table->getIdMethod() != "none") {
 
 		if (count($pks = $table->getPrimaryKey())) {
 			foreach ($pks as $pk) {
@@ -1262,7 +1408,7 @@ if ($complexObjectModel) {
 					$this->setNew(false);
 				} else {
 					<?php echo $table->getPhpName() ?>Peer::doUpdate($this, $con);
-				}			
+				}
 				$this->resetModified(); // [HL] After being saved an object is no longer 'modified'
 			}
 <?php
@@ -1303,24 +1449,24 @@ if ($complexObjectModel) {
 ?>
 			$this->alreadyInSave = false;
 		}
-<?php 
+<?php
 	} /* if ($complexObjectModel) */
 ?>
 	}
-<?php 
+<?php
 } /* if !table->isAlias && isset .... */
 ?>
 
-<?php 
-if (!$table->isAlias() && !$table->isReadOnly()) { 
+<?php
+if (!$table->isAlias() && !$table->isReadOnly()) {
 ?>
 	/**
 	 * Validates the objects modified field values.
-<?php 
+<?php
 	if ($complexObjectModel) {
 ?>
 	 * This includes all objects related to this table.
-<?php 
+<?php
 	} /* if ($complexObjectModel) */
 ?>
 	 *
@@ -1339,7 +1485,7 @@ if (!$table->isAlias() && !$table->isReadOnly()) {
 		return <?php echo $table->getPhpName()?>Peer::doValidate($this, $columns);
 	  }
 
-<?php 
+<?php
 	if (!$complexObjectModel) {
 ?>
 		return <?php echo $table->getPhpName()?>Peer::doValidate($this);
@@ -1361,10 +1507,10 @@ if (!$table->isAlias() && !$table->isReadOnly()) {
 	 * @var boolean
 	 */
 	protected $alreadyInValidation = false;
-  
+
 	/**
 	 * This function performs the validation work for complex object models.
-	 * 
+	 *
 	 * In addition to checking the current object, all related objects will
 	 * also be validated.  If all pass then <code>true</code> is returned; otherwise
 	 * an aggreagated array of ValidationFailed objects will be returned.
@@ -1376,12 +1522,12 @@ if (!$table->isAlias() && !$table->isReadOnly()) {
 		if (! $this->alreadyInValidation) {
 			$this->alreadyInValidation = true;
 			$retval = null;
-	  
-			$failureMap = array();	  
+
+			$failureMap = array();
 <?php
 		if (count($pVars) != 0) {
 ?>
-	  
+
 			// We call the validate method on the following object(s) if they
 			// were passed to this object by their coresponding set
 			// method.  This object relates to these object(s) by a
@@ -1396,15 +1542,15 @@ if (!$table->isAlias() && !$table->isReadOnly()) {
 				}
 			}
 <?php
-			} /* for() */ 
+			} /* for() */
 		} /* if count(pVars) */
 ?>
 
 			if (($retval = <?php echo $table->getPhpName()?>Peer::doValidate($this)) !== true) {
 				$failureMap = array_merge($failureMap, $retval);
 			}
-	  
-<?php 
+
+<?php
 		foreach ($table->getReferrers() as $fk) {
 			$tblFK = $fk->getTable();
 			if ( $tblFK->getName() != $table->getName() ) {
@@ -1416,13 +1562,13 @@ if (!$table->isAlias() && !$table->isReadOnly()) {
 						$relCol .= $column->getPhpName();
 					}
 				}
-				
+
 				if ($relCol == "") {
 					$relCol = $className . "s";
 				} else {
 					$relCol = $className . "sRelatedBy" . $relCol;
 				}
-				
+
 				$collName = "coll" . $relCol;
 ?>
 			if ($this-><?php echo $collName ?> !== null) {
@@ -1432,19 +1578,19 @@ if (!$table->isAlias() && !$table->isReadOnly()) {
 					}
 				}
 			}
-<?php	
+<?php
 			} /* if tableFK !+ table */
 		} /* foreach getReferrers() */
 ?>
-	  
+
 			$this->alreadyInValidation = false;
 		}
-	
+
 		return (!empty($failureMap) ? $failureMap : true);
 	}
-  
+
 <?php
-	} /* complexObjectModel */ 
+	} /* complexObjectModel */
 } /* ! isAlias */
 ?>
 
@@ -1454,9 +1600,9 @@ if (!$table->isAlias() && !$table->isReadOnly()) {
 if (!$table->isAlias()) {
 
 	if (!$table->isReadOnly()) {
-	
+
 		$throwsClause = "@throws PropelException";
-	
+
 		if (count($table->getPrimaryKey()) == 1) {
 			$pkeys = $table->getPrimaryKey();
 			$col = $pkeys[0];
@@ -1468,19 +1614,19 @@ if (!$table->isAlias()) {
 	 *
 	 * @param mixed <?php echo $clo ?> Primary key.
 	 * @return void
-	 * <?php echo $throwsClause ?>
+	 * <?php echo $throwsClause ?> 
 	 */
-	public function setPrimaryKey($key) 
-	{		
+	public function setPrimaryKey($key)
+	{
 		$this->set<?php echo $col->getPhpName() ?>($key);
 	}
-	
-<?php	 
+
+<?php
 		} elseif (count($table->getPrimaryKey()) > 1) { /* if(count($table->getPrimaryKey()) == 1) */
 ?>
 
 	private $pks = array();
-	
+
 	/**
 	 * Set the PrimaryKey.
 	 *
@@ -1489,7 +1635,7 @@ if (!$table->isAlias()) {
 	 * @throws PropelException
 	 */
 	public function setPrimaryKey($keys)
-	{						
+	{
 <?php
 			$i = 0;
 			foreach ($table->getPrimaryKey() as $pk) {
@@ -1497,31 +1643,33 @@ if (!$table->isAlias()) {
 ?>
 
 		$this->set<?php echo $pk->getPhpName() ?>($keys[<?php echo $i ?>]);
-<?php		
+<?php
 				$i++;
 			} /* foreach ($table->getPrimaryKey() */
 ?>
 
 	}
 
-<?php 
+<?php
 		} else { /* if(count($table->getPrimaryKey()) == 1) */
 ?>
-	
+
 	/**
 	 * Dummy primary key setter.
-	 * For now this function needs to exist because it's mandated in the Persistent
-	 * interface, and because other methods will attempt to set the primary key.
 	 * 
-	 * This should be removed in favor of more complex template work.
+	 * This function only exists to preserve backwards compatibility.  It is no longer
+	 * needed or required by the Persistent interface.  It will be removed in next BC-breaking
+	 * release of Propel.
+	 *
+	 * @deprecated
 	 */
 	 public function setPrimaryKey($pk)
 	 {
-		 // do nothing, because this doesn't support primary keys
-	 }	 
-<?php 
+		 // do nothing, because this object doesn't have any primary keys
+	 }
+<?php
 		} /* if(count($table->getPrimaryKey()) == 1) */
-		
+
 	} /* !table->isReadOnly() */
 ?>
 
@@ -1532,83 +1680,84 @@ if (!$table->isAlias()) {
 	 */
 	public function getPrimaryKey()
 	{
-<?php 
+<?php
 	if (count($table->getPrimaryKey()) == 1) {
 ?>
 
 		return $this->get<?php $pkeys = $table->getPrimaryKey(); echo $pkeys[0]->getPhpName()?>();
-<?php 
+<?php
 	} elseif (count($table->getPrimaryKey()) > 1) { /* if (count($table->getPrimaryKey()) == 1) { */
 		$i = 0;
 		foreach ($table->getPrimaryKey() as $pk) {
 ?>
 		$this->pks[<?php echo $i ?>] = $this->get<?php echo $pk->getPhpName() ?>();
-<?php		
+<?php
 			$i++;
 		} /* foreach */
 ?>
 		return $this->pks;
-<?php 
+<?php
 	} else { /*if (count($table->getPrimaryKey()) == 1) { */
 ?>
 
 		return null;
-<?php 
-	} /* if (count($table->getPrimaryKey()) == 1) { */ 
+<?php
+	} /* if (count($table->getPrimaryKey()) == 1) { */
 ?>
 
 	}
 
 <?php
-	if (!$table->isAbstract()) { 
+	if (!$table->isAbstract()) {
 ?>
-	
+
 	/**
 	 * Makes a copy of this object that will be inserted as a new row in table when saved.
 	 * It creates a new object filling in the simple attributes, but skipping any primary
 	 * keys that are defined for the table.
-	 * <?php if ($complexObjectModel) { ?> 
+	 * <?php if ($complexObjectModel) { ?>
 	 * If desired, this method can also make copies of all associated (fkey referrers)
 	 * objects.
 	 *
 	 * @param boolean $deepCopy Whether to also copy all rows that refer (by fkey) to the current row.
-	 * <?php } ?> 
+	 * <?php } ?>
 	 * @return <?php echo $table->getPhpName() ?> Clone of current object.
 	 * @throws PropelException
 	 */
-	public function copy(<?php if ($complexObjectModel) { ?>$deepCopy = false<?php } ?>) 
+	public function copy(<?php if ($complexObjectModel) { ?>$deepCopy = false<?php } ?>)
 	{
-		$copyObj = new <?php echo $table->getPhpName() ?>();
+		$clazz = get_class($this);
+		$copyObj = new $clazz();
 <?php
-	
+
 		$pkcols = array();
 		foreach ($table->getColumns() as $pkcol) {
 			if ($pkcol->isPrimaryKey()) {
 				$pkcols[] = $pkcol->getName();
 			}
 		}
-	
+
 		foreach ($table->getColumns() as $col) {
-	
+
 			if (!in_array($col->getName(), $pkcols)) {
 ?>
 		$copyObj->set<?php echo $col->getPhpName()?>($this-><?php echo strtolower($col->getName()) ?>);
 <?php
 		}
 	}
-	
-		if ($complexObjectModel) { 
-	
+
+		if ($complexObjectModel) {
+
 			// Avoid useless code by checking to see if there are any referrers
 			// to this table:
 			if (count($table->getReferrers()) > 0) {
 ?>
 
-		if ($deepCopy) {		
+		if ($deepCopy) {
 			// important: setNew(false) because this affects the behavior of
 			// the getter/setter methods for fkey referrer objects.
 			$copyObj->setNew(false);
-<?php		
+<?php
 
 				foreach ($table->getReferrers() as $fk) {
 					$tblFK = $fk->getTable();
@@ -1621,7 +1770,7 @@ if (!$table->isAlias()) {
 								$relCol .= $column->getPhpName();
 							}
 						}
-		
+
 						if ($relCol == "") {
 							$pCollName = $className . "s";
 							$pCollNameNoS = $className;
@@ -1636,43 +1785,43 @@ if (!$table->isAlias()) {
 			}
 <?php
 					} /* if tblFK != table */
-				} /* foreach */		 
+				} /* foreach */
 ?>
 		} // if ($deepCopy)
-<?php			
+<?php
 			} /* if (count referrers > 0 ) */
 ?>
-		
+
 		$copyObj->setNew(true);
-		
-<?php 
+
+<?php
 		} /* if complex object model */
 
 // this is a little redundant, but it's clearer than re-using
 // the $pkcols array  we created above
 		foreach ($table->getColumns() as $col) {
-			if ($col->isPrimaryKey()) {	
-					$coldefval = $col->getDefaultValue();
-					
+			if ($col->isPrimaryKey()) {
+					$coldefval = $col->getPhpDefaultValue();
+
 					// This seems to work pretty well for getting
 					// the right value (including NULL)
 					$coldefval = var_export($coldefval, true);
 ?>
 		$copyObj->set<?php echo $col->getPhpName()?>(<?php echo $coldefval ?>); // this is a pkey column, so set to default value
-<?php		
+<?php
 			} // if col->isPrimaryKey
 		} // foreach
 ?>
 
 		return $copyObj;
 	}
-		
-<?php 
-	} /* if (!$table->isAbstract()) */ 
+
+<?php
+	} /* if (!$table->isAbstract()) */
 ?>
 
 	/**
-	 * returns a peer instance associated with this om.  Since Peer classes	
+	 * returns a peer instance associated with this om.  Since Peer classes
 	 * are not to have any instance attributes, this method returns the
 	 * same instance for all member of this class. The method could therefore
 	 * be static, but this would prevent one from overriding the behavior.
@@ -1685,7 +1834,7 @@ if (!$table->isAlias()) {
 		}
 		return self::$peer;
 	}
-<?php 
+<?php
 } /* if !table->isAlias */
 ?>
 

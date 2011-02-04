@@ -1,6 +1,6 @@
 <?php
 /*
- * $Id: run-tests.php,v 1.4 2005/03/19 13:37:54 micha Exp $
+ * $Id: run-tests.php 536 2007-01-10 14:30:38Z heltem $
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -17,7 +17,7 @@
  * This software consists of voluntary contributions made by many individuals
  * and is licensed under the LGPL. For more information please see
  * <http://propel.phpdb.org>.
- */ 
+ */
 
 define('ROOT',             realpath(dirname(__FILE__) . '/../../../../') . '/');
 define('CREOLE_BASE',      ROOT . 'creole/');
@@ -51,8 +51,8 @@ require_once 'propel/GeneratedPeerTest.php';
 // TESTS ----------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 
-$timer = new Benchmark_Timer();    
-$timer->start();  
+$timer = new Benchmark_Timer();
+$timer->start();
 
 $result = new PHPUnit_TestResult();
 $result->addListener(new TestListener());

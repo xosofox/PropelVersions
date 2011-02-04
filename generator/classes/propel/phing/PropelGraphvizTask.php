@@ -1,7 +1,7 @@
 <?php
 
 /*
- *  $Id: PropelGraphvizTask.php,v 1.1 2005/01/25 23:56:43 hlellelid Exp $
+ *  $Id: PropelGraphvizTask.php 536 2007-01-10 14:30:38Z heltem $
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -26,148 +26,152 @@ include_once 'propel/engine/database/model/AppData.php';
 /**
  * A task to generate Graphviz png images from propel datamodel.
  *
- * @author Mark Kimsal
- * @version $Revision: 1.1 $
- * @package propel.phing
+ * @author     Mark Kimsal
+ * @version    $Revision: 536 $
+ * @package    propel.phing
  */
 class PropelGraphvizTask extends AbstractPropelDataModelTask {
 
-    /**
-     * The properties file that maps an SQL file to a particular database.
-     * @var PhingFile
-     */
-    private $sqldbmap;
-    
-    /**
-     * Name of the database.
-     */
-    private $database;
+	/**
+	 * The properties file that maps an SQL file to a particular database.
+	 * @var        PhingFile
+	 */
+	private $sqldbmap;
 
-    /**
-     * Name of the output directory.
-     */
-    private $outDir;
-    
+	/**
+	 * Name of the database.
+	 */
+	private $database;
 
-    /**
-     * Set the sqldbmap.
-     * @param PhingFile $sqldbmap The db map.
-     */
-    public function setOutputDirectory(PhingFile $out)
-    {
-        $this->outDir = $out;
-    }
+	/**
+	 * Name of the output directory.
+	 */
+	private $outDir;
 
 
-    /**
-     * Set the sqldbmap.
-     * @param PhingFile $sqldbmap The db map.
-     */
-    public function setSqlDbMap(PhingFile $sqldbmap)
-    {
-        $this->sqldbmap = $sqldbmap;
-    }
-
-    /**
-     * Get the sqldbmap.
-     * @return PhingFile $sqldbmap.
-     */
-    public function getSqlDbMap()
-    {
-        return $this->sqldbmap;
-    }
-    
-    /**
-     * Set the database name.
-     * @param string $database
-     */
-    public function setDatabase($database)
-    {
-        $this->database = $database;
-    }
-
-    /**
-     * Get the database name.
-     * @return string
-     */
-    public function getDatabase()
-    {
-        return $this->database;
-    }
+	/**
+	 * Set the sqldbmap.
+	 * @param      PhingFile $sqldbmap The db map.
+	 */
+	public function setOutputDirectory(PhingFile $out)
+	{
+		if (!$out->exists()) {
+			$out->mkdirs();
+		}
+		$this->outDir = $out;
+	}
 
 
-    public function main()
-    {
+	/**
+	 * Set the sqldbmap.
+	 * @param      PhingFile $sqldbmap The db map.
+	 */
+	public function setSqlDbMap(PhingFile $sqldbmap)
+	{
+		$this->sqldbmap = $sqldbmap;
+	}
+
+	/**
+	 * Get the sqldbmap.
+	 * @return     PhingFile $sqldbmap.
+	 */
+	public function getSqlDbMap()
+	{
+		return $this->sqldbmap;
+	}
+
+	/**
+	 * Set the database name.
+	 * @param      string $database
+	 */
+	public function setDatabase($database)
+	{
+		$this->database = $database;
+	}
+
+	/**
+	 * Get the database name.
+	 * @return     string
+	 */
+	public function getDatabase()
+	{
+		return $this->database;
+	}
+
+
+	public function main()
+	{
 
 		$count = 0;
 
+		$dotSyntax = '';
 
-        // file we are going to create
+		// file we are going to create
 
-	    foreach ($this->getDataModels() as $dataModel) {
-            
- 
-			@ob_end_clean();
-			ob_start();
-			echo "digraph G {\n";
-					foreach ($dataModel->getDatabases() as $database) {
-						
+		$dbMaps = $this->getDataModelDbMap();
+
+		foreach ($this->getDataModels() as $dataModel) {
+
+			$dotSyntax .= "digraph G {\n";
+			foreach ($dataModel->getDatabases() as $database) {
+
+				$this->log("db: " . $database->getName());
+
 				//print the tables
-						foreach($database->getTables() as $tbl) {        
+				foreach($database->getTables() as $tbl) {
+
+					$this->log("\t+ " . $tbl->getName());
+
 					++$count;
-					echo 'node'.$tbl->getName().' [label="{'.$tbl->getName().'|';
-					
+					$dotSyntax .= 'node'.$tbl->getName().' [label="{<table>'.$tbl->getName().'|<cols>';
+
 					foreach ($tbl->getColumns() as $col) {
+						$dotSyntax .= $col->getName() . ' (' . $col->getType()  . ')';
 						if ($col->getForeignKey() != null ) {
-							echo 'F\| ';
+							$dotSyntax .= ' [FK]';
 						} elseif ($col->isPrimaryKey()) {
-							echo 'P\| ';
-						} else {
-							echo ' \| ';
+							$dotSyntax .= ' [PK]';
 						}
-						echo $col->getName().' : \l';
+						$dotSyntax .= '\l';
 					}
-					echo '}", shape=record];';
-					echo "\n";
-		
+					$dotSyntax .= '}", shape=record];';
+					$dotSyntax .= "\n";
 				}
-		
+
 				//print the relations
-		
+
 				$count = 0;
-				echo "\n";
-						foreach($database->getTables() as $tbl) {        
+				$dotSyntax .= "\n";
+				foreach($database->getTables() as $tbl) {
 					++$count;
-					
+
 					foreach ($tbl->getColumns() as $col) {
 						$fk = $col->getForeignKey();
 						if ( $fk == null ) continue;
-						echo 'node'.$tbl->getName() .' -> node'.$fk->getForeignTableName();
-						echo "\n";
+						$dotSyntax .= 'node'.$tbl->getName() .':cols -> node'.$fk->getForeignTableName() . ':table [label="' . $col->getName() . '=' . implode(',', $fk->getForeignColumns()) . ' "];';
+						$dotSyntax .= "\n";
 					}
 				}
-		
-		 
-				
-					} // foreach database        
-				} //foreach datamodels            
-			echo "}\n";
-			$dotSyntax = ob_get_contents();
-			ob_end_clean();
-		
-			$this->writePNG($dotSyntax,$this->outDir->toString(),"schema.png");
-        
-    } // main()
 
 
-    /**
-     * probably insecure 
-     */
-    function writePNG($dotSyntax, $outputDir, $filename) {
-		$dot = fopen($outputDir.'/schema.dot','w');
-		fputs($dot,$dotSyntax);
-		fclose($dot);
-		exec('dot '.$outputDir.'/schema.dot -Tpng -o '.$outputDir.'/schema.png');
-    }
+
+			} // foreach database
+			$dotSyntax .= "}\n";
+
+			$this->writeDot($dotSyntax,$this->outDir);
+
+		} //foreach datamodels
+
+	} // main()
+
+
+	/**
+	 * probably insecure
+	 */
+	function writeDot($dotSyntax, PhingFile $outputDir) {
+		$file = new PhingFile($outputDir, 'schema.dot');
+		$this->log("Writing dot file to " . $file->getAbsolutePath());
+		file_put_contents($file->getAbsolutePath(), $dotSyntax);
+	}
 
 }

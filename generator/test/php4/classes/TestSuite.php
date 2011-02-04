@@ -1,6 +1,6 @@
 <?php
 /*
- * $Id: TestSuite.php,v 1.1 2004/11/29 16:01:20 micha Exp $
+ * $Id: TestSuite.php 536 2007-01-10 14:30:38Z heltem $
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -17,7 +17,7 @@
  * This software consists of voluntary contributions made by many individuals
  * and is licensed under the LGPL. For more information please see
  * <http://propel.phpdb.org>.
- */ 
+ */
 
 require_once 'PHPUnit/TestSuite.php';
 
@@ -26,28 +26,28 @@ class TestSuite extends PHPUnit_TestSuite
 
   function TestSuite($name)
   {
-    $line = "--------------------------------------------";
-    $info = "| Running test suite '$name'";
-    $info = $info . str_repeat(' ', strlen($line) - strlen($info) - 1) . '|';
+	$line = "--------------------------------------------";
+	$info = "| Running test suite '$name'";
+	$info = $info . str_repeat(' ', strlen($line) - strlen($info) - 1) . '|';
 
-    print "\n";
-    print "$line\n";
-    print "$info\n";
-    print "$line\n";        
-    print "\n";
+	print "\n";
+	print "$line\n";
+	print "$info\n";
+	print "$line\n";
+	print "\n";
 
-    parent::PHPUnit_TestSuite($name);
+	parent::PHPUnit_TestSuite($name);
   }
 
   /**
   * Add a test suite.
   *
-  * @param  object
+  * @param      object
   */
   function addTestSuite($name)
   {
-    print "[INFO] Adding test suite '$name'\n";
-    parent::addTestSuite($name);
+	print "[INFO] Adding test suite '$name'\n";
+	parent::addTestSuite($name);
   }
 
   /**
@@ -55,9 +55,8 @@ class TestSuite extends PHPUnit_TestSuite
   */
   function run(&$result)
   {
-    print "\n";
-    parent::run($result);
+	print "\n";
+	parent::run($result);
   }
 
 }
-

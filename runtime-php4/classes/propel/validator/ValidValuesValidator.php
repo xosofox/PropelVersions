@@ -1,6 +1,6 @@
 <?php
 /*
- *  $Id: ValidValuesValidator.php,v 1.3 2005/04/04 10:24:14 micha Exp $
+ *  $Id: ValidValuesValidator.php 536 2007-01-10 14:30:38Z heltem $
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -24,18 +24,18 @@ require_once 'propel/validator/BasicValidator.php';
 /**
  * A validator for valid values (e.g. for enum fields)
  *
- * @author Michael Aichler <aichler@mediacluster.de>
- * @version $Revision: 1.3 $
+ * @author     Michael Aichler <aichler@mediacluster.de>
+ * @version    $Revision: 536 $
  */
 class ValidValuesValidator extends BasicValidator
 {
 
   /**
-  * @see BasicValidator::isValid()
+  * @see        BasicValidator::isValid()
   */
   function isValid (&$map, $str)
   {
-    return in_array($str, explode("|", $map->getValue()));
+	return in_array($str, explode("|", $map->getValue()));
   }
 
 }

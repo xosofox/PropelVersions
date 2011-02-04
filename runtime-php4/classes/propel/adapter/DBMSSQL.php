@@ -1,6 +1,6 @@
 <?php
 /*
- * $Id: DBMSSQL.php,v 1.1 2004/11/29 14:08:08 micha Exp $
+ * $Id: DBMSSQL.php 536 2007-01-10 14:30:38Z heltem $
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -25,13 +25,13 @@ require_once 'propel/adapter/DBSybase.php';
  * This is used to connect to a MSSQL database.  For now, this class
  * simply extends the adaptor for Sybase.
  *
- * @author Hans Lellelid <hans@xmpl.org> (Propel)
- * @author Michael Aichler <aichler@mediacluster.de> (Propel)
- * @author Gonzalo Diethelm <gonzalo.diethelm@sonda.com> (Torque)
- * @version $Revision: 1.1 $
- * @package propel.adapter
+ * @author     Hans Lellelid <hans@xmpl.org> (Propel)
+ * @author     Michael Aichler <aichler@mediacluster.de> (Propel)
+ * @author     Gonzalo Diethelm <gonzalo.diethelm@sonda.com> (Torque)
+ * @version    $Revision: 536 $
+ * @package    propel.adapter
  */
 class DBMSSQL extends DBSybase
 {
-    // no difference currently
+	// no difference currently
 }

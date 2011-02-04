@@ -160,12 +160,13 @@ if (!$table->isAlias()) {
       else $quote = '"';
 
       foreach ($col->getChildren() as $child) {
+	    $childpkg = ($child->getPackage() ? $child->getPackage() : $package);
 ?>
   /** A key representing a particular subclass */
   function CLASSKEY_<?php echo strtoupper($child->getKey()) ?>() { return <?php echo $quote . $child->getKey() . $quote ?>; }
 
   /** A class that can be returned by this peer. */
-  function CLASSNAME_<?php echo strtoupper($child->getKey()) ?>() { return "<?php echo $package . '.' . $child->getClassName() ?>"; }
+  function CLASSNAME_<?php echo strtoupper($child->getKey()) ?>() { return "<?php echo $childpkg . '.' . $child->getClassName() ?>"; }
 <?php
       } /* foreach children */
     } /* if col->isenumerated...() */
@@ -253,6 +254,11 @@ if (!$table->isAlias()) {
       $criteria->addSelectColumn(<?php echo $table->getPhpName()?>Peer::COUNT_DISTINCT());
     } else {
       $criteria->addSelectColumn(<?php echo $table->getPhpName()?>Peer::COUNT());
+    }
+    // just in case we're grouping: add those columns to the select statement
+    foreach($criteria->getGroupByColumns() as $column)
+    {
+      $criteria->addSelectColumn($column);
     }
 
     $rs =& <?php echo $table->getPhpName()?>Peer::doSelectRS($criteria, $con);
@@ -614,7 +620,8 @@ if (!$table->isAlias() && ! $table->isReadOnly())
       $pn = $table->getPhpName() . 'Peer';
       $cn = PeerBuilder::getColumnName($col);
 ?>
-      $selectCriteria->put(<?php echo $pn?>::<?php echo $cn ?>(), $criteria->remove(<?php echo $pn ?>::<?php echo $cn ?>()));
+      $comparison = $criteria->getComparison(<?php echo $pn?>::<?php echo $cn?>());
+      $selectCriteria->add(<?php echo $pn?>::<?php echo $cn ?>(), $criteria->remove(<?php echo $pn ?>::<?php echo $cn ?>()), $comparison);
 <?php 
     }  /* if col is prim key */
   } /* foreach */
@@ -840,7 +847,7 @@ if (!$table->isAlias() && ! $table->isReadOnly())
       include_once '<?php echo ClassTools::getFilePath($tblFKPackage, $tblFK->getPhpName()); ?>';
 
       // delete related <?php echo $fkClassName ?> objects
-      $c = new Criteria();
+      $c =& new Criteria();
 <?php
           for($x=0,$xlen=count($columnNamesF); $x < $xlen; $x++) {
             $columnFK = $tblFK->getColumn($columnNamesF[$x]);
@@ -1339,7 +1346,7 @@ if ($complexObjectModel) {
 
 // ===========================================================
 
-  if ($countFK > 2) {
+  if ($countFK > 1) {
     $includeJoinAll = true;
     foreach ($table->getForeignKeys() as $fk) {
       $tblFK = $table->getDatabase()->getTable($fk->getForeignTableName());
@@ -1447,10 +1454,10 @@ if ($complexObjectModel) {
       $cls = Propel::import($omClass);
       if (Propel::isError($cls)) { return $cls; }
       
-      $obj1 = new $cls();
+      $obj1 =& new $cls();
       
       $e =& $obj1->hydrate($rs);
-      if (Propel::isError()) { return $e; }
+      if (Propel::isError($e)) { return $e; }
 <?php
     $index = 1;
     foreach ($table->getForeignKeys() as $fk ) {
@@ -1498,7 +1505,7 @@ if ($complexObjectModel) {
       $cls = Propel::import($omClass);
       if (Propel::isError($cls)) { return $cls; }
       
-      $obj<?php echo $index ?> = new $cls();
+      $obj<?php echo $index ?> =& new $cls();
       
       $e = $obj<?php echo $index ?>->hydrate($rs, $startcol<?php echo $index ?>);
       if (Propel::isError($e)) { return $e; }
@@ -1645,9 +1652,9 @@ if ($complexObjectModel) {
       $cls = Propel::import($omClass);
       if (Propel::isError($cls)) { return $cls; }
       
-      $obj1 = new $cls();
+      $obj1 =& new $cls();
       $e = $obj1->hydrate($rs);
-      if (Propel::isError()) { return $e; }
+      if (Propel::isError($e)) { return $e; }
       
 <?php
     $index = 1;
@@ -1695,7 +1702,7 @@ if ($complexObjectModel) {
       $cls = Propel::import($omClass);
       if (Propel::isError($cls)) { return $cls; }
       
-      $obj<?php echo $index ?>  = new $cls();
+      $obj<?php echo $index ?>  =& new $cls();
       
       $e = $obj<?php echo $index ?>->hydrate($rs, $startcol<?php echo $index ?>);
       if (Propel::isError($e)) { return $e; }

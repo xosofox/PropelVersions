@@ -1,6 +1,6 @@
 <?php
 /*
- *  $Id: RequiredValidator.php,v 1.2 2004/12/04 14:00:42 micha Exp $
+ *  $Id: RequiredValidator.php 536 2007-01-10 14:30:38Z heltem $
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -34,18 +34,18 @@ require_once 'propel/validator/BasicValidator.php';
  *   </validator>
  * </code>
  *
- * @author Michael Aichler <aichler@mediacluster.de>
- * @version $Revision: 1.2 $
+ * @author     Michael Aichler <aichler@mediacluster.de>
+ * @version    $Revision: 536 $
  */
 class RequiredValidator extends BasicValidator
 {
 
   /**
-  * @see BasicValidator::isValid()
+  * @see        BasicValidator::isValid()
   */
   function isValid (&$map, $str)
   {
-    return ($str !== null && $str !== "");
+	return ($str !== null && $str !== "");
   }
 
 }

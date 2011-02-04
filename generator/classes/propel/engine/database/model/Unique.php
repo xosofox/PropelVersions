@@ -1,6 +1,6 @@
 <?php
 /*
- *  $Id: Unique.php,v 1.1 2004/07/08 00:22:57 hlellelid Exp $
+ *  $Id: Unique.php 536 2007-01-10 14:30:38Z heltem $
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -28,42 +28,42 @@ include_once 'propel/engine/database/model/Index.php';
  * a column also creates an index on that column (this is known to be
  * true for MySQL and Oracle).
  *
- * @author Hans Lellelid <hans@xmpl.org> (Propel)
- * @author Jason van Zyl <jvanzyl@apache.org> (Torque)
- * @author Daniel Rall <dlr@collab.net> (Torque)
- * @version $Revision: 1.1 $
- * @package propel.engine.database.model
+ * @author     Hans Lellelid <hans@xmpl.org> (Propel)
+ * @author     Jason van Zyl <jvanzyl@apache.org> (Torque)
+ * @author     Daniel Rall <dlr@collab.net> (Torque)
+ * @version    $Revision: 536 $
+ * @package    propel.engine.database.model
  */
 class Unique extends Index {
 
-    /**
-     * Default constructor.
-     */
-    function __construct()
-    {    
-    }
-    
-    /**
-     * Returns <code>true</code>.
-     */
-    public function isUnique()
-    {
-        return true;
-    }
+	/**
+	 * Default constructor.
+	 */
+	public function __construct(Table $table, $indexColumns = array())
+	{
+	}
 
-    /**
-     * String representation of the index. This is an xml representation.
-     */
-    public function toString()
-    {
-        $result = " <unique name=\"" . $this->getName() . "\">\n";        
-        $columns = $this->getColumns();
-        for ($i=0, $size=count($columns); $i < $size; $i++) {
-            $result .= "  <unique-column name=\""
-                . $columns[$i]
-                . "\"/>\n";
-        }
-        $result .= " </unique>\n";
-        return $result;
-    }
+	/**
+	 * Returns <code>true</code>.
+	 */
+	public function isUnique()
+	{
+		return true;
+	}
+
+	/**
+	 * String representation of the index. This is an xml representation.
+	 */
+	public function toString()
+	{
+		$result = " <unique name=\"" . $this->getName() . "\">\n";
+		$columns = $this->getColumns();
+		for ($i=0, $size=count($columns); $i < $size; $i++) {
+			$result .= "  <unique-column name=\""
+				. $columns[$i]
+				. "\"/>\n";
+		}
+		$result .= " </unique>\n";
+		return $result;
+	}
 }

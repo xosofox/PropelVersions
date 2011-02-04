@@ -1,6 +1,6 @@
 <?php
 /*
- *  $Id: Domain.php,v 1.3 2005/03/17 01:16:41 hlellelid Exp $
+ *  $Id: Domain.php 967 2008-02-12 00:15:47Z hans $
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -19,84 +19,86 @@
  * <http://propel.phpdb.org>.
  */
 
+require_once 'propel/engine/database/model/XMLElement.php';
+
 /**
  * A Class for holding data about a column used in an Application.
  *
- * @author  Hans Lellelid <hans@xmpl.org> (Propel)
- * @author  Martin Poeschl <mpoeschl@marmot.at> (Torque)
- * @version $Revision: 1.3 $
- * @package propel.engine.database.model
+ * @author     Hans Lellelid <hans@xmpl.org> (Propel)
+ * @author     Martin Poeschl <mpoeschl@marmot.at> (Torque)
+ * @version    $Revision: 967 $
+ * @package    propel.engine.database.model
  */
 class Domain extends XMLElement {
 
-    private $name;
-    private $description;
-    private $size;
-    private $scale;
-    
-    /** type as defined in schema.xml */
-    private $propelType;
-    private $sqlType;
-    private $defaultValue;          
-    
+	private $name;
+	private $description;
+	private $size;
+	private $scale;
+
+	/** type as defined in schema.xml */
+	private $propelType;
+	private $sqlType;
+	private $defaultValue;
+
 	/** Database object -- in the event this Domain is specified in the XML. */
 	private $database;
-	
-    /**
-     * Creates a new Domain object.
-     * If this domain needs a name, it must be specified manually.
-     * 
-     * @param string $type Propel type.
-     * @param string $sqlType SQL type.
-     * @param string $size
-     * @param string $scale
-     */
-    public function __construct($type = null, $sqlType = null, $size = null, $scale = null)
-    {
-        $this->propelType = $type;
-        $this->sqlType = ($sqlType !== null) ? $sqlType : $type;
-        $this->size = $size;
-        $this->scale = $scale;
-    }
 
-    public function copy(Domain $domain)
-    {
-        $this->defaultValue = $domain->getDefaultValue();
-        $this->description = $domain->getDescription();
-        $this->name = $domain->getName();
-        $this->scale = $domain->getScale();
-        $this->size = $domain->getSize();
-        $this->sqlType = $domain->getSqlType();
-        $this->propelType = $domain->getType();
-    }
-       
+	/**
+	 * Creates a new Domain object.
+	 * If this domain needs a name, it must be specified manually.
+	 *
+	 * @param      string $type Propel type.
+	 * @param      string $sqlType SQL type.
+	 * @param      string $size
+	 * @param      string $scale
+	 */
+	public function __construct($type = null, $sqlType = null, $size = null, $scale = null)
+	{
+		$this->propelType = $type;
+		$this->sqlType = ($sqlType !== null) ? $sqlType : $type;
+		$this->size = $size;
+		$this->scale = $scale;
+	}
+
+	public function copy(Domain $domain)
+	{
+		$this->defaultValue = $domain->getDefaultValue();
+		$this->description = $domain->getDescription();
+		$this->name = $domain->getName();
+		$this->scale = $domain->getScale();
+		$this->size = $domain->getSize();
+		$this->sqlType = $domain->getSqlType();
+		$this->propelType = $domain->getType();
+	}
+
    /**
-     * Sets up the Domain object based on the attributes that were passed to loadFromXML().
-	 * @see parent::loadFromXML()
-     */
-    protected function setupObject()
-    {    
-        $schemaType = strtoupper($this->getAttribute("type"));
-        $this->copy($this->getDatabase()->getPlatform()->getDomainForType($schemaType));
-        
-        //Name
-        $this->name = $this->getAttribute("name");
-        
-        //Default column value.
-        $this->defaultValue = $this->getAttribute("default"); // may need to adjust -- e.g. for boolean values        
-        
-        $this->size = $this->getAttribute("size");
-        $this->scale = $this->getAttribute("scale");
-        $this->description = $this->getAttribute("description");
-    }
-	
+	 * Sets up the Domain object based on the attributes that were passed to loadFromXML().
+	 * @see        parent::loadFromXML()
+	 */
+	protected function setupObject()
+	{
+		$schemaType = strtoupper($this->getAttribute("type"));
+		$this->copy($this->getDatabase()->getPlatform()->getDomainForType($schemaType));
+
+		//Name
+		$this->name = $this->getAttribute("name");
+
+		//Default column value.
+		$this->defaultValue = $this->getAttribute("default"); // may need to adjust -- e.g. for boolean values
+
+		$this->size = $this->getAttribute("size");
+		$this->scale = $this->getAttribute("scale");
+		$this->description = $this->getAttribute("description");
+	}
+
 	/**
 	 * Sets the owning database object (if this domain is being setup via XML).
 	 */
 	public function setDatabase(Database $database) {
 		$this->database = $database;
 	}
-	
+
 	/**
 	 * Gets the owning database object (if this domain was setup via XML).
 	 */
@@ -104,195 +106,213 @@ class Domain extends XMLElement {
 		return $this->database;
 	}
 
-    /**
-     * @return Returns the description.
-     */
-    public function getDescription()
-    {
-        return $this->description;
-    }
+	/**
+	 * @return     Returns the description.
+	 */
+	public function getDescription()
+	{
+		return $this->description;
+	}
 
-    /**
-     * @param description The description to set.
-     */
-    public function setDescription($description)
-    {
-        $this->description = $description;
-    }
+	/**
+	 * @param      description The description to set.
+	 */
+	public function setDescription($description)
+	{
+		$this->description = $description;
+	}
 
-    /**
-     * @return Returns the name.
-     */
-    public function getName()
-    {
-        return $this->name;
-    }
+	/**
+	 * @return     Returns the name.
+	 */
+	public function getName()
+	{
+		return $this->name;
+	}
 
-    /**
-     * @param name The name to set.
-     */
-    public function setName($name)
-    {
-        $this->name = $name;
-    }
+	/**
+	 * @param      name The name to set.
+	 */
+	public function setName($name)
+	{
+		$this->name = $name;
+	}
 
-    /**
-     * @return Returns the scale.
-     */
-    public function getScale()
-    {
-        return $this->scale;
-    }
+	/**
+	 * @return     Returns the scale.
+	 */
+	public function getScale()
+	{
+		return $this->scale;
+	}
 
-    /**
-     * @param scale The scale to set.
-     */
-    public function setScale($scale)
-    {
-        $this->scale = $scale;
-    }
-    
-    /**
-     * Replaces the size if the new value is not null.
-     * 
-     * @param value The size to set.
-     */
-    public function replaceScale($value)
-    {
-        if ($value !== null) {
-            $this->scale = $value;
-        }
-    }
+	/**
+	 * @param      scale The scale to set.
+	 */
+	public function setScale($scale)
+	{
+		$this->scale = $scale;
+	}
 
-    /**
-     * @return Returns the size.
-     */
-    public function getSize()
-    {
-        return $this->size;
-    }
+	/**
+	 * Replaces the size if the new value is not null.
+	 *
+	 * @param      value The size to set.
+	 */
+	public function replaceScale($value)
+	{
+		if ($value !== null) {
+			$this->scale = $value;
+		}
+	}
 
-    /**
-     * @param size The size to set.
-     */
-    public function setSize($size)
-    {
-        $this->size = $size;
-    }
-    
-    /**
-     * Replaces the size if the new value is not null.
-     * 
-     * @param value The size to set.
-     */
-    public function replaceSize($value)
-    {
-        if ($value !== null) {
-            $this->size = $value;
-        }
-    }
+	/**
+	 * @return     Returns the size.
+	 */
+	public function getSize()
+	{
+		return $this->size;
+	}
 
-    /**
-     * @return string Returns the propelType.
-     */
-    public function getType()
-    {
-        return $this->propelType;
-    }
+	/**
+	 * @param      size The size to set.
+	 */
+	public function setSize($size)
+	{
+		$this->size = $size;
+	}
 
-    /**
-     * @param string $propelType The PropelTypes type to set.
-     */
-    public function setType($propelType)
-    {
-        $this->propelType = $propelType;
-    }  
-    
-    /**
-     * Replaces the default value if the new value is not null.
-     * 
-     * @param value The defaultValue to set.
-     */
-    public function replaceType($value)
-    {
-        if ($value !== null) {
-            $this->propelType = $value;
-        }       
-    }
-    
-    /**
-     * @return string Returns the defaultValue.
-     */
-    public function getDefaultValue()
-    {
+	/**
+	 * Replaces the size if the new value is not null.
+	 *
+	 * @param      value The size to set.
+	 */
+	public function replaceSize($value)
+	{
+		if ($value !== null) {
+			$this->size = $value;
+		}
+	}
+
+	/**
+	 * @return     string Returns the propelType.
+	 */
+	public function getType()
+	{
+		return $this->propelType;
+	}
+
+	/**
+	 * @param      string $propelType The PropelTypes type to set.
+	 */
+	public function setType($propelType)
+	{
+		$this->propelType = $propelType;
+	}
+
+	/**
+	 * Replaces the default value if the new value is not null.
+	 *
+	 * @param      value The defaultValue to set.
+	 */
+	public function replaceType($value)
+	{
+		if ($value !== null) {
+			$this->propelType = $value;
+		}
+	}
+
+	/**
+	 * Gets the "raw" default value, suitable for use in SQL.
+	 * @return     string Returns the defaultValue.
+	 */
+	public function getDefaultValue()
+	{
+		if ($this->defaultValue !== null) {
+			return $this->defaultValue;
+		}
+	}
+
+	/**
+	 * Gets the default value, type-casted for use in PHP OM.
+	 * @return     mixed
+	 * @see        getDefaultValue()
+	 */
+	public function getPhpDefaultValue()
+	{
 		if ($this->defaultValue === null) {
 			return null;
 		} elseif ($this->propelType === PropelTypes::BOOLEAN) {
 			// convert "true" => TRUE
-            return $this->booleanValue($this->defaultValue);
+			return $this->booleanValue($this->defaultValue);
 		} elseif ($this->propelType === PropelTypes::DATE || $this->propelType === PropelTypes::TIME || $this->propelType === PropelTypes::TIMESTAMP) {
+            // Under PHP 5.2.5, using '0000-00-00' as the default value will trigger an exception
+            // so instead of converting it to unix timestamp, we turn it into a null
+            if(preg_match('/^0000-00-00/', $this->defaultValue)) {
+                return null;
+            } 
 			// DATE/TIME vals need to be converted to integer timestamp
 			$ts = strtotime($this->defaultValue);
-			if ($ts === -1) {
-				throw new EngineException("Unable to parse default value for ".$table->getName().".".$col->getName()." as date/time value: " . var_export($val, true));
+			if ($ts === -1 || $ts === false) { // in PHP 5.1 return value changes to FALSE
+				throw new EngineException("Unable to parse default value as date/time value: " . var_export($this->defaultValue, true));
 			}
 			return $ts;
 		} else {
 			return $this->defaultValue;
 		}
-    }
-     
-    /**
-     * @param defaultValue The defaultValue to set.
-     */
-    public function setDefaultValue($defaultValue)
-    {
-        $this->defaultValue = $defaultValue;
-    }
-    
-    /**
-     * Replaces the default value if the new value is not null.
-     * 
-     * @param string $value The defaultValue to set.
-     */
-    public function replaceDefaultValue($value)
-    {
-        if ($value !== null) {
-            $this->defaultValue = $value;
-        }         
-    }
+	}
 
-    /**
-     * @return Returns the sqlType.
-     */
-    public function getSqlType() 
-    {
-        return $this->sqlType;
-    }
+	/**
+	 * @param      defaultValue The defaultValue to set.
+	 */
+	public function setDefaultValue($defaultValue)
+	{
+		$this->defaultValue = $defaultValue;
+	}
 
-    /**
-     * @param string $sqlType The sqlType to set.
-     */
-    public function setSqlType($sqlType) 
-    {
-        $this->sqlType = $sqlType;
-    }
+	/**
+	 * Replaces the default value if the new value is not null.
+	 *
+	 * @param      string $value The defaultValue to set.
+	 */
+	public function replaceDefaultValue($value)
+	{
+		if ($value !== null) {
+			$this->defaultValue = $value;
+		}
+	}
 
-    /**
-     * Return the size and scale in brackets for use in an sql schema.
-     * 
-     * @return size and scale or an empty String if there are no values 
-     *         available.
-     */
-    public function printSize()
-    {
-        if ($this->size !== null && $this->scale !== null)  {
-            return '(' . $this->size . ',' . $this->scale . ')';
-        } elseif ($this->size !== null) {
-            return '(' . $this->size . ')';
-        } else {
-            return "";
-        }
-    }
+	/**
+	 * @return     Returns the sqlType.
+	 */
+	public function getSqlType()
+	{
+		return $this->sqlType;
+	}
+
+	/**
+	 * @param      string $sqlType The sqlType to set.
+	 */
+	public function setSqlType($sqlType)
+	{
+		$this->sqlType = $sqlType;
+	}
+
+	/**
+	 * Return the size and scale in brackets for use in an sql schema.
+	 *
+	 * @return     size and scale or an empty String if there are no values
+	 *         available.
+	 */
+	public function printSize()
+	{
+		if ($this->size !== null && $this->scale !== null)  {
+			return '(' . $this->size . ',' . $this->scale . ')';
+		} elseif ($this->size !== null) {
+			return '(' . $this->size . ')';
+		} else {
+			return "";
+		}
+	}
 
 }

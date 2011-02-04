@@ -1,6 +1,6 @@
 <?php
 /*
- *  $Id: BasicValidator.php,v 1.2 2004/12/04 14:00:40 micha Exp $
+ *  $Id: BasicValidator.php 536 2007-01-10 14:30:38Z heltem $
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -27,25 +27,25 @@
  * context.  They are simply given an input and some value and asked whether the input
  * is valid.
  *
- * @author Michael Aichler <aichler@mediacluster.de>
- * @version $Revision: 1.2 $
- * @package propel.validator
+ * @author     Michael Aichler <aichler@mediacluster.de>
+ * @version    $Revision: 536 $
+ * @package    propel.validator
  */
 class BasicValidator
 {
   /**
   * Determine whether a value meets the criteria specified
   *
-  * @param ValidatorMap $map
-  * @param string $str a <code>String</code> to be tested
+  * @param      ValidatorMap $map
+  * @param      string $str a <code>String</code> to be tested
   *
-  * @return mixed TRUE if valid, error message otherwise
+  * @return     mixed TRUE if valid, error message otherwise
   */
   function isValid(&$map, $str)
   {
-    trigger_error(
-      "Validator::isValid(): abstract function has to be reimplemented !",
-      E_USER_ERROR
-    );
+	trigger_error(
+	  "Validator::isValid(): abstract function has to be reimplemented !",
+	  E_USER_ERROR
+	);
   }
 }

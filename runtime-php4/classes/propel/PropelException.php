@@ -1,6 +1,6 @@
 <?php
 /*
- *  $Id: PropelException.php,v 1.3 2004/03/29 21:21:10 micha Exp $
+ *  $Id: PropelException.php 536 2007-01-10 14:30:38Z heltem $
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -23,8 +23,8 @@ include_once 'creole/Exception.php';
 
 /**
  * The base class of all exceptions thrown by Propel.
- * @author Hans Lellelid <hans@xmpl.org>
- * @version $Revision: 1.3 $
+ * @author     Hans Lellelid <hans@xmpl.org>
+ * @version    $Revision: 536 $
  */
 class PropelException extends Exception
 {
@@ -33,34 +33,34 @@ class PropelException extends Exception
 
   function PropelException($code, $p1, $p2 = null)
   {
-    $cause = null;
+	$cause = null;
 
-    if ($p2 !== null) {
-      $msg = $p1;
-      $cause = $p2;
-    }
-    else
-    {
-      if (is_a($p1, 'Exception')) {
-          $msg = "";
-          $cause = $p1;
-      } else {
-          $msg = $p1;
-      }
-    }
+	if ($p2 !== null) {
+	  $msg = $p1;
+	  $cause = $p2;
+	}
+	else
+	{
+	  if (is_a($p1, 'Exception')) {
+		  $msg = "";
+		  $cause = $p1;
+	  } else {
+		  $msg = $p1;
+	  }
+	}
 
-    parent::Exception($code, $msg);
+	parent::Exception($code, $msg);
 
-    if ($cause !== null) {
-      $this->backtrace = $cause->backtrace;
-      $this->cause = $cause;
-      $this->message .= " [wrapped: " . $cause->getMessage() ."]";
-    }
+	if ($cause !== null) {
+	  $this->backtrace = $cause->backtrace;
+	  $this->cause = $cause;
+	  $this->message .= " [wrapped: " . $cause->getMessage() ."]";
+	}
   }
 
   function getCause()
   {
-    return $this->cause;
+	return $this->cause;
   }
 
 }
