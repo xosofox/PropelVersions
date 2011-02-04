@@ -8,7 +8,7 @@
  * @license    MIT License
  */
 
-require_once 'tools/helpers/bookstore/BookstoreTestBase.php';
+require_once dirname(__FILE__) . '/../../../../tools/helpers/bookstore/BookstoreEmptyTestBase.php';
 
 /**
  * Tests the generated Peer classes.
@@ -85,6 +85,13 @@ class GeneratedPeerTest extends BookstoreTestBase
 			'bar.BOOK_ID'
 		);
 		$this->assertEquals($expected, $c->getSelectColumns(), 'addSelectColumns() does not add lazy loaded columns but uses the second parameter as an alias');
+	}
+	
+	public function testDefaultStringFormatConstant()
+	{
+		$this->assertTrue(defined('BookPeer::DEFAULT_STRING_FORMAT'), 'every Peer class has the DEFAULT_STRING_FORMAT constant');
+		$this->assertEquals('YAML', AuthorPeer::DEFAULT_STRING_FORMAT, 'default string format is YAML by default');
+		$this->assertEquals('XML', PublisherPeer::DEFAULT_STRING_FORMAT, 'default string format can be customized using the defaultStringFormat attribute in the schema');
 	}
 
 }

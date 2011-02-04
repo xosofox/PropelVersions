@@ -9,13 +9,13 @@
  * @license    MIT License
  */
 
-require_once 'tools/helpers/bookstore/behavior/BookstoreNestedSetTestBase.php';
+require_once dirname(__FILE__) . '/../../../../tools/helpers/bookstore/behavior/BookstoreNestedSetTestBase.php';
 
 /**
  * Tests for NestedSetBehaviorQueryBuilderModifier class
  *
  * @author		François Zaninotto
- * @version		$Revision: 1612 $
+ * @version		$Revision: 1834 $
  * @package		generator.behavior.nestedset
  */
 class NestedSetBehaviorQueryBuilderModifierTest extends BookstoreNestedSetTestBase 

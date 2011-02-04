@@ -8,18 +8,17 @@
  * @license    MIT License
  */
 
-require_once 'tools/helpers/BaseTestCase.php';
+require_once dirname(__FILE__) . '/../../../tools/helpers/BaseTestCase.php';
 require_once dirname(__FILE__) . '/../../../../runtime/lib/query/Criteria.php';
 require_once dirname(__FILE__) . '/../../../../runtime/lib/util/BasePeer.php';
 
-set_include_path(get_include_path() . PATH_SEPARATOR . "fixtures/bookstore/build/classes");		
-Propel::init('fixtures/bookstore/build/conf/bookstore-conf.php');
+Propel::init(dirname(__FILE__) . '/../../../fixtures/bookstore/build/conf/bookstore-conf.php');
 
 /**
  * Test class for Criteria combinations.
  *
  * @author     Francois Zaninotto
- * @version    $Id: CriteriaCombineTest.php 1773 2010-05-25 10:25:06Z francois $
+ * @version    $Id: CriteriaCombineTest.php 1833 2010-07-19 21:52:20Z francois $
  * @package    runtime.query
  */
 class CriteriaCombineTest extends BaseTestCase

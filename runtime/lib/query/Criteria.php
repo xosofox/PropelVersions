@@ -21,7 +21,7 @@
  * @author     Eric Dobbs <eric@dobbse.net> (Torque)
  * @author     Henning P. Schmiedehausen <hps@intermeta.de> (Torque)
  * @author     Sam Joseph <sam@neurogrid.com> (Torque)
- * @version    $Revision: 1941 $
+ * @version    $Revision: 2168 $
  * @package    propel.runtime.query
  */
 class Criteria implements IteratorAggregate
@@ -54,6 +54,15 @@ class Criteria implements IteratorAggregate
 	/** Comparison type. */
 	const NOT_LIKE = " NOT LIKE ";
 
+	/** Comparison for array column types */
+	const CONTAINS_ALL = "CONTAINS_ALL";
+
+	/** Comparison for array column types */
+	const CONTAINS_SOME = "CONTAINS_SOME";
+
+	/** Comparison for array column types */
+	const CONTAINS_NONE = "CONTAINS_NONE";
+	
 	/** PostgreSQL comparison type */
 	const ILIKE = " ILIKE ";
 
@@ -374,6 +383,23 @@ class Criteria implements IteratorAggregate
 		}
 	}
 
+	/**
+	 * Returns the table name and alias based on a table alias or name.
+	 * Use this method to get the details of a table name that comes in a clause,
+	 * which can be either a table name or an alias name.
+	 *
+	 * @param      string $tableAliasOrName
+	 * @return     array($tableName, $tableAlias)
+	 */
+	public function getTableNameAndAlias($tableAliasOrName)
+	{
+		if (isset($this->aliases[$tableAliasOrName])) {
+			return array($this->aliases[$tableAliasOrName], $tableAliasOrName);
+		} else {
+			return array($tableAliasOrName, null);
+		}
+	}
+	
 	/**
 	 * Get the keys of the criteria map, i.e. the list of columns bearing a condition
 	 * <code>
@@ -779,37 +805,56 @@ class Criteria implements IteratorAggregate
 	 * Example usage:
 	 * <code>
 	 * $c->addJoin(ProjectPeer::ID, FooPeer::PROJECT_ID, Criteria::LEFT_JOIN);
-	 * // LEFT JOIN FOO ON PROJECT.ID = FOO.PROJECT_ID
+	 * // LEFT JOIN FOO ON (PROJECT.ID = FOO.PROJECT_ID)
 	 * </code>
 	 *
-	 * @param      mixed $left A String with the left side of the join.
+	 * @param      mixed $left  A String with the left side of the join.
 	 * @param      mixed $right A String with the right side of the join.
-	 * @param      mixed $operator A String with the join operator
+	 * @param      mixed $joinType A String with the join operator
 	 *                             among Criteria::INNER_JOIN, Criteria::LEFT_JOIN,
 	 *                             and Criteria::RIGHT_JOIN
    *
 	 * @return     Criteria A modified Criteria object.
 	 */
-	public function addJoin($left, $right, $operator = null)
+	public function addJoin($left, $right, $joinType = null)
 	{
-		$join = new Join();
-		if (!is_array($left)) {
-			// simple join
-			$join->addCondition($left, $right);
-		} else {
-			// join with multiple conditions
-			// deprecated: use addMultipleJoin() instead
+		if (is_array($left)) {
+			$conditions = array();
 			foreach ($left as $key => $value) {
-				$join->addCondition($value, $right[$key]);
+				$condition = array($value, $right[$key]);
+				$conditions []= $condition;
 			}
+			return $this->addMultipleJoin($conditions, $joinType);
 		}
-		$join->setJoinType($operator);
+		
+		$join = new Join();
+		
+		// is the left table an alias ?
+		$dotpos = strrpos($left, '.');
+		$leftTableAlias = substr($left, 0, $dotpos);
+		$leftColumnName = substr($left, $dotpos + 1);
+		list($leftTableName, $leftTableAlias) = $this->getTableNameAndAlias($leftTableAlias);
+
+		// is the right table an alias ?
+		$dotpos = strrpos($right, '.');
+		$rightTableAlias = substr($right, 0, $dotpos);
+		$rightColumnName = substr($right, $dotpos + 1);
+		list($rightTableName, $rightTableAlias) = $this->getTableNameAndAlias($rightTableAlias);
+		
+		$join->addExplicitCondition(
+			$leftTableName, $leftColumnName, $leftTableAlias,
+			$rightTableName, $rightColumnName, $rightTableAlias,
+			Join::EQUAL);
+		
+		$join->setJoinType($joinType);
 		
 		return $this->addJoinObject($join);
 	}
 
 	/**
 	 * Add a join with multiple conditions
+	 * @deprecated use Join::setJoinCondition($criterion) instead
+	 *
 	 * @see http://propel.phpdb.org/trac/ticket/167, http://propel.phpdb.org/trac/ticket/606
 	 * 
 	 * Example usage:
@@ -826,14 +871,49 @@ class Criteria implements IteratorAggregate
 	 *
 	 * @return     Criteria A modified Criteria object.
 	 */
-	public function addMultipleJoin($conditions, $joinType = null) 
+	public function addMultipleJoin($conditions, $joinType = null)
 	{
 		$join = new Join();
+		$joinCondition = null;
 		foreach ($conditions as $condition) {
-			$join->addCondition($condition[0], $condition[1], isset($condition[2]) ? $condition[2] : Criteria::EQUAL);
+			$left = $condition[0];
+			$right = $condition[1];
+			if ($pos = strrpos($left, '.')) {
+				$leftTableAlias = substr($left, 0, $pos);
+				$leftColumnName = substr($left, $pos + 1);
+				list($leftTableName, $leftTableAlias) = $this->getTableNameAndAlias($leftTableAlias);
+			} else {
+				list($leftTableName, $leftTableAlias) = array(null, null);
+				$leftColumnName = $left;
+			}
+			if ($pos = strrpos($right, '.')) {
+				$rightTableAlias = substr($right, 0, $pos);
+				$rightColumnName = substr($right, $pos + 1);
+				list($rightTableName, $rightTableAlias) = $this->getTableNameAndAlias($rightTableAlias);
+			} else {
+				list($rightTableName, $rightTableAlias) = array(null, null);
+				$rightColumnName = $right;
+			}
+			if (!$join->getRightTableName()) {
+				$join->setRightTableName($rightTableName);
+			}
+			if (!$join->getRightTableAlias()) {
+				$join->setRightTableAlias($rightTableAlias);
+			}
+			$conditionClause = $leftTableAlias ? $leftTableAlias . '.' : ($leftTableName ? $leftTableName . '.' : '');
+			$conditionClause .= $leftColumnName;
+			$conditionClause .= isset($condition[2]) ? $condition[2] : JOIN::EQUAL;
+			$conditionClause .= $rightTableAlias ? $rightTableAlias . '.' : ($rightTableName ? $rightTableName . '.' : '');
+			$conditionClause .= $rightColumnName;
+			$criterion = $this->getNewCriterion($leftTableName.'.'.$leftColumnName, $conditionClause, Criteria::CUSTOM);
+			if (null === $joinCondition) {
+				$joinCondition = $criterion;
+			} else {
+				$joinCondition = $joinCondition->addAnd($criterion);
+			}
 		}
 		$join->setJoinType($joinType);
-		
+		$join->setJoinCondition($joinCondition);
 		return $this->addJoinObject($join);
 	}
 	

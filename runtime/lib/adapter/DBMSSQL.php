@@ -12,7 +12,7 @@
  * This is used to connect to a MSSQL database.
  *
  * @author     Hans Lellelid <hans@xmpl.org> (Propel)
- * @version    $Revision: 1952 $
+ * @version    $Revision: 2090 $
  * @package    propel.runtime.adapter
  */
 class DBMSSQL extends DBAdapter
@@ -89,6 +89,15 @@ class DBMSSQL extends DBAdapter
 	public function quoteIdentifier($text)
 	{
 		return '[' . $text . ']';
+	}
+
+	/**
+	 * @see        DBAdapter::quoteIdentifierTable()
+	 */
+	public function quoteIdentifierTable($table)
+	{
+		// e.g. 'database.table alias' should be escaped as '[database].[table] [alias]'
+		return '[' . strtr($table, array('.' => '].[', ' ' => '] [')) . ']';
 	}
 
 	/**

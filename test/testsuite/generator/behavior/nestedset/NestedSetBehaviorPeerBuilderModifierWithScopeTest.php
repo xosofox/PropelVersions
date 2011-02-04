@@ -1,7 +1,7 @@
 <?php
 
 /*
- *	$Id: NestedSetBehaviorPeerBuilderModifierWithScopeTest.php 1612 2010-03-16 22:56:21Z francois $
+ *	$Id: NestedSetBehaviorPeerBuilderModifierWithScopeTest.php 2168 2011-01-20 15:07:57Z francois $
  * This file is part of the Propel package.
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -9,13 +9,13 @@
  * @license    MIT License
  */
 
-require_once 'tools/helpers/bookstore/behavior/BookstoreNestedSetTestBase.php';
+require_once dirname(__FILE__) . '/../../../../tools/helpers/bookstore/behavior/BookstoreNestedSetTestBase.php';
 
 /**
  * Tests for NestedSetBehaviorPeerBuilderModifier class
  *
  * @author		François Zaninotto
- * @version		$Revision: 1612 $
+ * @version		$Revision: 2168 $
  * @package		generator.behavior.nestedset
  */
 class NestedSetBehaviorPeerBuilderModifierWithScopeTest extends BookstoreNestedSetTestBase 
@@ -56,7 +56,7 @@ class NestedSetBehaviorPeerBuilderModifierWithScopeTest extends BookstoreNestedS
   public function testRetrieveRoot()
 	{
 		$this->assertTrue(method_exists('Table10Peer', 'retrieveRoot'), 'nested_set adds a retrieveRoot() method');
-		Table10Peer::doDeleteAll();	
+		Table10Peer::doDeleteAll();
 		$t1 = new Table10();
 		$t1->setLeftValue(1);
 		$t1->setRightValue(2);
