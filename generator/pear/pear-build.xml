@@ -7,13 +7,13 @@
 	be aware of it in any way.
 	
     Normal use:
-    $> propel-gen insert-sql
+    $> propel-gen /path/to/my/project
     
     Specific target: 
-    $> propel-gen /path/to/my/project insert-sql
+    $> propel-gen insert-sql /path/to/my/project 
 
 -->
-<project name="propel-project-builder" default="main">
+<project name="propel-project-builder" default="main" basedir=".">
 
 <!-- set a default target if none provided -->
 <property name="target" value="main"/>
@@ -90,6 +90,10 @@
 	<phing phingfile="build-propel.xml" target="create-db"/>
 </target>
 
+<target name="creole" depends="configure">
+	<phing phingfile="build-propel.xml" target="creole"/>
+</target>
+
 <target name="reverse" depends="configure">
 	<phing phingfile="build-propel.xml" target="reverse"/>
 </target>
@@ -116,52 +120,6 @@
 
 <target name="sql" depends="configure">
 	<phing phingfile="build-propel.xml" target="sql"/>
-</target>
-
-<target name="sql-diff" depends="configure">
-	<phing phingfile="build-propel.xml" target="sql-diff"/>
-</target>
-
-<target name="diff" depends="sql-diff" />
-
-<target name="migration-status" depends="configure">
-	<phing phingfile="build-propel.xml" target="migration-status"/>
-</target>
-
-<target name="status" depends="migration-status" />
-
-<target name="migration-up" depends="configure">
-	<phing phingfile="build-propel.xml" target="migration-up"/>
-</target>
-
-<target name="migrate-up" depends="migration-up" />
-
-<target name="up" depends="migration-up" />
-
-<target name="migration-down" depends="configure">
-	<phing phingfile="build-propel.xml" target="migration-down"/>
-</target>
-
-<target name="migrate-down" depends="migration-down" />
-
-<target name="down" depends="migration-down" />
-
-<target name="migration" depends="configure">
-	<phing phingfile="build-propel.xml" target="migration"/>
-</target>
-
-<target name="migrate" depends="migration" />
-
-<target name="old-sql" depends="configure">
-	<phing phingfile="build-propel.xml" target="old-sql"/>
-</target>
-
-<target name="dbd2propel" depends="configure">
-	<phing phingfile="build-propel.xml" target="dbd2propel"/>
-</target>
-
-<target name="graphviz" depends="configure">
-	<phing phingfile="build-propel.xml" target="graphviz"/>
 </target>
 
 </project>
