@@ -22,7 +22,7 @@
  * @author     Martin Poeschl <mpoeschl@marmot.at> (Torque)
  * @author     Henning P. Schmiedehausen <hps@intermeta.de> (Torque)
  * @author     Kurt Schrader <kschrader@karmalab.org> (Torque)
- * @version    $Revision: 2145 $
+ * @version    $Revision: 2168 $
  * @package    propel.runtime
  */
 class Propel
@@ -30,7 +30,7 @@ class Propel
 	/**
 	 * The Propel version.
 	 */
-	const VERSION = '1.5.7-dev';
+	const VERSION = '1.6.0-dev';
 	
 	/**
 	 * A constant for <code>default</code>.
@@ -215,6 +215,12 @@ class Propel
 		'NestedSetPreOrderNodeIterator' => 'om/NestedSetPreOrderNodeIterator.php',
 		'NestedSetRecursiveIterator' => 'om/NestedSetRecursiveIterator.php',
 
+		'PropelCSVParser'     => 'parser/PropelCSVParser.php',
+		'PropelJSONParser'    => 'parser/PropelJSONParser.php',
+		'PropelParser'        => 'parser/PropelParser.php',
+		'PropelXMLParser'     => 'parser/PropelXMLParser.php',
+		'PropelYAMLParser'    => 'parser/PropelYAMLParser.php',
+		
 		'Criteria'            => 'query/Criteria.php',
 		'Criterion'           => 'query/Criterion.php',
 		'CriterionIterator'   => 'query/CriterionIterator.php',
@@ -569,7 +575,7 @@ class Propel
 			self::$connectionMap[$name]['master'] = $con;
 		}
 
-		return self::$connectionMap[$name]['master'];		
+		return self::$connectionMap[$name]['master'];
 	}
 	
 	/**
@@ -588,13 +594,13 @@ class Propel
 
 			$slaveconfigs = isset(self::$configuration['datasources'][$name]['slaves']) ? self::$configuration['datasources'][$name]['slaves'] : null;
 
-			if (empty($slaveconfigs)) { 
+			if (empty($slaveconfigs)) {
 				// no slaves configured for this datasource
 				// fallback to the master connection
 				self::$connectionMap[$name]['slave'] = self::getMasterConnection($name);
-			} else { 
+			} else {
 				// Initialize a new slave
-				if (isset($slaveconfigs['connection']['dsn'])) { 
+				if (isset($slaveconfigs['connection']['dsn'])) {
 					// only one slave connection configured
 					$conparams = $slaveconfigs['connection'];
 				} else {

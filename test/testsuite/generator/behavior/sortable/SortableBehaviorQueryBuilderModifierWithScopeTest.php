@@ -9,13 +9,13 @@
  * @license    MIT License
  */
 
-require_once 'tools/helpers/bookstore/behavior/BookstoreSortableTestBase.php';
+require_once dirname(__FILE__) . '/../../../../tools/helpers/bookstore/behavior/BookstoreSortableTestBase.php';
 
 /**
  * Tests for SortableBehavior class query modifier when the scope is enabled
  *
  * @author		Francois Zaninotto
- * @version		$Revision: 1612 $
+ * @version		$Revision: 1834 $
  * @package		generator.behavior.sortable
  */
 class SortableBehaviorQueryBuilderModifierWithScopeTest extends BookstoreSortableTestBase

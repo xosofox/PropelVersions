@@ -8,7 +8,7 @@
  * @license    MIT License
  */
 
-require_once 'tools/helpers/bookstore/BookstoreEmptyTestBase.php';
+require_once dirname(__FILE__) . '/../../../../tools/helpers/bookstore/BookstoreEmptyTestBase.php';
 
 /**
  * Tests the generated Object classes.
@@ -31,7 +31,7 @@ class GeneratedObjectTest extends BookstoreEmptyTestBase
 	protected function setUp()
 	{
 		parent::setUp();
-		require_once 'tools/helpers/bookstore/behavior/TestAuthor.php';
+		require_once dirname(__FILE__) . '/../../../../tools/helpers/bookstore/behavior/TestAuthor.php';
 	}
 
 	/**
@@ -669,12 +669,12 @@ class GeneratedObjectTest extends BookstoreEmptyTestBase
 		// reload and verify that the types are the same
 		$r2 = ReviewPeer::retrieveByPK($id);
 
-		$this->assertType('integer', $r2->getId(), "Expected getId() to return an integer.");
-		$this->assertType('string', $r2->getReviewedBy(), "Expected getReviewedBy() to return a string.");
-		$this->assertType('boolean', $r2->getRecommended(), "Expected getRecommended() to return a boolean.");
-		$this->assertType('Book', $r2->getBook(), "Expected getBook() to return a Book.");
-		$this->assertType('float', $r2->getBook()->getPrice(), "Expected Book->getPrice() to return a float.");
-		$this->assertType('DateTime', $r2->getReviewDate(null), "Expected Book->getReviewDate() to return a DateTime.");
+		$this->assertInternalType('integer', $r2->getId(), "Expected getId() to return an integer.");
+		$this->assertInternalType('string', $r2->getReviewedBy(), "Expected getReviewedBy() to return a string.");
+		$this->assertInternalType('boolean', $r2->getRecommended(), "Expected getRecommended() to return a boolean.");
+		$this->assertInstanceOf('Book', $r2->getBook(), "Expected getBook() to return a Book.");
+		$this->assertInternalType('float', $r2->getBook()->getPrice(), "Expected Book->getPrice() to return a float.");
+		$this->assertInstanceOf('DateTime', $r2->getReviewDate(null), "Expected Book->getReviewDate() to return a DateTime.");
 
 	}
 
@@ -909,7 +909,7 @@ class GeneratedObjectTest extends BookstoreEmptyTestBase
 		$reviews = $book->getReviews();
 
 		$b2 = $book->copy(true);
-		$this->assertType('Book', $b2);
+		$this->assertInstanceOf('Book', $b2);
 		$this->assertNull($b2->getId());
 
 		$r2 = $b2->getReviews();
@@ -920,7 +920,7 @@ class GeneratedObjectTest extends BookstoreEmptyTestBase
 		$emp = BookstoreEmployeePeer::doSelectOne(new Criteria());
 		$e2 = $emp->copy(true);
 
-		$this->assertType('BookstoreEmployee', $e2);
+		$this->assertInstanceOf('BookstoreEmployee', $e2);
 		$this->assertNull($e2->getId());
 
 		$this->assertEquals($emp->getBookstoreEmployeeAccount()->getLogin(), $e2->getBookstoreEmployeeAccount()->getLogin());
@@ -1018,7 +1018,7 @@ class GeneratedObjectTest extends BookstoreEmptyTestBase
 
 		$arr1 = $m->toArray(BasePeer::TYPE_COLNAME);
 		$this->assertNotNull($arr1[MediaPeer::COVER_IMAGE]);
-		$this->assertType('resource', $arr1[MediaPeer::COVER_IMAGE]);
+		$this->assertInternalType('resource', $arr1[MediaPeer::COVER_IMAGE]);
 
 		$arr2 = $m->toArray(BasePeer::TYPE_COLNAME, false);
 		$this->assertNull($arr2[MediaPeer::COVER_IMAGE]);
@@ -1031,7 +1031,7 @@ class GeneratedObjectTest extends BookstoreEmptyTestBase
 		$this->assertEquals($expectedDiff, $diffKeys);
 	}
 	
-	public function testToArrayIncludeForeignObjects()
+	public function testToArrayIncludesForeignObjects()
 	{
 		BookstoreDataPopulator::populate();
 		BookPeer::clearInstancePool();
@@ -1043,7 +1043,7 @@ class GeneratedObjectTest extends BookstoreEmptyTestBase
 		$books = BookPeer::doSelectJoinAuthor($c);
 		$book = $books[0];
 		
-		$arr1 = $book->toArray(BasePeer::TYPE_PHPNAME, null, true);
+		$arr1 = $book->toArray(BasePeer::TYPE_PHPNAME, null, array(), true);
 		$expectedKeys = array(
 			'Id',
 			'Title',
@@ -1061,7 +1061,7 @@ class GeneratedObjectTest extends BookstoreEmptyTestBase
 		$books = BookPeer::doSelectJoinAll($c);
 		$book = $books[0];
 
-		$arr2 = $book->toArray(BasePeer::TYPE_PHPNAME, null, true);
+		$arr2 = $book->toArray(BasePeer::TYPE_PHPNAME, null, array(), true);
 		$expectedKeys = array(
 			'Id',
 			'Title',
@@ -1073,6 +1073,27 @@ class GeneratedObjectTest extends BookstoreEmptyTestBase
 			'Author'
 		);
 		$this->assertEquals($expectedKeys, array_keys($arr2), 'toArray() can return sub arrays for hydrated related objects');
+	}
+	
+	public function testToArrayIncludesForeignReferrers()
+	{
+		$a1 = new Author();
+		$a1->setFirstName('Leo');
+		$a1->setLastName('Tolstoi');
+		$arr = $a1->toArray(BasePeer::TYPE_PHPNAME, null, array(), true);
+		$this->assertFalse(array_key_exists('Books', $arr));
+		$b1 = new Book();
+		$b1->setTitle('War and Peace');
+		$b2 = new Book();
+		$b2->setTitle('Anna Karenina');
+		$a1->addBook($b1);
+		$a1->addBook($b2);
+		$arr = $a1->toArray(BasePeer::TYPE_PHPNAME, null, array(), true);
+		$this->assertTrue(array_key_exists('Books', $arr));
+		$this->assertEquals(2, count($arr['Books']));
+		$this->assertEquals('War and Peace', $arr['Books']['Book_0']['Title']);
+		$this->assertEquals('Anna Karenina', $arr['Books']['Book_1']['Title']);
+		$this->assertEquals('*RECURSION*', $arr['Books']['Book_0']['Author']);
 	}
 
 	/**
@@ -1102,7 +1123,7 @@ class GeneratedObjectTest extends BookstoreEmptyTestBase
 			$b->save();
 			$this->fail("Expected setting auto-increment primary key to result in Exception");
 		} catch (Exception $x) {
-			$this->assertType('PropelException', $x);
+			$this->assertInstanceOf('PropelException', $x);
 		}
 
 		// ... but we should silently ignore NULL values, since these are really
@@ -1125,7 +1146,7 @@ class GeneratedObjectTest extends BookstoreEmptyTestBase
 	 * table with allowPkInsert=true set
 	 *
 	 * saves the object, gets it from data-source again and then compares
-	 * them for equality (thus the instance pool is also checked) 
+	 * them for equality (thus the instance pool is also checked)
 	 */
 	public function testAllowPkInsertOnIdMethodNativeTable()
 	{
@@ -1209,13 +1230,29 @@ class GeneratedObjectTest extends BookstoreEmptyTestBase
 		$this->assertTrue($b->isPrimaryKeyNull());
 	}
 	
-	public function testAddPrimaryString()
+	public function testAddToStringDefault()
 	{
-	  $this->assertFalse(method_exists('Author', '__toString'), 'addPrimaryString() does not add a __toString() method if no column has the primaryString attribute');
+	  $this->assertTrue(method_exists('Author', '__toString'), 'addPrimaryString() adds a __toString() method even if no column has the primaryString attribute');
+	  $author = new Author();
+	  $author->setFirstName('Leo');
+	  $author->setLastName('Tolstoi');
+	  $expected = <<<EOF
+Id: null
+FirstName: Leo
+LastName: Tolstoi
+Email: null
+Age: null
+
+EOF;
+		$this->assertEquals($expected, (string) $author, 'addPrimaryString() adds a __toString() method returning the YAML representation of the object where no column is defined as primaryString');
+	}
+	
+	public function testAddToStringPrimaryString()
+	{
 	  $this->assertTrue(method_exists('Book', '__toString'), 'addPrimaryString() adds a __toString() method if a column has the primaryString attribute');
 	  $book = new Book();
 	  $book->setTitle('foo');
-	  $this->assertEquals((string) $book, 'foo', 'addPrimaryString() adds a __toString() method returning the value of the the first column where primaryString is true');
+	  $this->assertEquals('foo', (string) $book, 'addPrimaryString() adds a __toString() method returning the value of the the first column where primaryString is true');
 	}
 
 	public function testPreInsert()

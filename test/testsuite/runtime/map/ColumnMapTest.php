@@ -8,19 +8,17 @@
  * @license    MIT License
  */
 
-require_once 'PHPUnit/Framework/TestCase.php';
-require_once dirname(__FILE__) . '/../../../../runtime/lib/map/ColumnMap.php';
-require_once dirname(__FILE__) . '/../../../../runtime/lib/map/TableMap.php';
+require_once dirname(__FILE__) . '/../../../tools/helpers/bookstore/BookstoreTestBase.php';
 
 /**
  * Test class for TableMap.
  *
  * @author     François Zaninotto
- * @version    $Id: ColumnMapTest.php 1773 2010-05-25 10:25:06Z francois $
+ * @version    $Id: ColumnMapTest.php 2168 2011-01-20 15:07:57Z francois $
  * @package    runtime.map
  */
-class ColumnMapTest extends PHPUnit_Framework_TestCase 
-{ 
+class ColumnMapTest extends BookstoreTestBase
+{
   protected $databaseMap;
 
   protected function setUp()
@@ -115,8 +113,6 @@ class ColumnMapTest extends PHPUnit_Framework_TestCase
   
   public function testGetRelation()
   {
-		set_include_path(get_include_path() . PATH_SEPARATOR . "fixtures/bookstore/build/classes");		
-		Propel::init('fixtures/bookstore/build/conf/bookstore-conf.php');	
     $bookTable = BookPeer::getTableMap();
     $titleColumn = $bookTable->getColumn('TITLE');
     $this->assertNull($titleColumn->getRelation(), 'getRelation() returns null for non-foreign key columns');
