@@ -1,24 +1,49 @@
 <?php
 
-/**
- * This file is part of the Propel package.
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @license    MIT License
- */
+require_once 'PHPUnit/Framework/TestCase.php';
+include_once 'propel/map/ColumnMap.php';
+include_once 'propel/map/TableMap.php';
+include_once 'propel/map/DatabaseMap.php';
 
-require_once dirname(__FILE__) . '/../../../tools/helpers/bookstore/BookstoreTestBase.php';
+class TestDatabaseBuilder
+{
+  protected static $dmap = null;
+  protected static $tmap = null;
+  public static function getDmap()
+  {
+    if (is_null(self::$dmap)) {
+        self::$dmap = new DatabaseMap('foodb');
+    }
+    return self::$dmap;
+  }
+  public static function setTmap($tmap)
+  {
+    self::$tmap = $tmap;
+  }
+  public static function getTmap()
+  {
+    return self::$tmap;
+  }    
+}
+
+class BazTableMap extends TableMap
+{
+  public function initialize()
+  {
+    $this->setName('baz');
+    $this->setPhpName('Baz');
+  }
+}
 
 /**
  * Test class for DatabaseMap.
  *
  * @author     François Zaninotto
- * @version    $Id: DatabaseMapTest.php 2168 2011-01-20 15:07:57Z francois $
+ * @version    $Id: ColumnMapTest.php 1121 2009-09-14 17:20:11Z francois $
  * @package    runtime.map
  */
-class DatabaseMapTest extends BookstoreTestBase 
-{
+class DatabaseMapTest extends PHPUnit_Framework_TestCase 
+{ 
   protected $databaseMap;
 
   protected function setUp()
@@ -121,44 +146,17 @@ class DatabaseMapTest extends BookstoreTestBase
       $this->assertTrue(true, 'getTableByPhpName() throws an exception when called on a table with no phpName');
     }
     $tmap2 = new TableMap('foo2');
-    $tmap2->setClassname('Foo2');
+    $tmap2->setPhpName('Foo2');
     $this->databaseMap->addTableObject($tmap2);
     $this->assertEquals($tmap2, $this->databaseMap->getTableByPhpName('Foo2'), 'getTableByPhpName() returns tableMap when phpName was set by way of TableMap::setPhpName()');
   }
     
   public function testGetTableByPhpNameNotLoaded()
   {
+  	set_include_path(get_include_path() . PATH_SEPARATOR . "fixtures/bookstore/build/classes");
+		require_once 'bookstore/map/BookTableMap.php';
+  	require_once 'bookstore/BookPeer.php';
 		$this->assertEquals('book', Propel::getDatabaseMap('bookstore')->getTableByPhpName('Book')->getName(), 'getTableByPhpName() can autoload a TableMap when the Peer class is generated and autoloaded');
   }
   
-}
-
-class TestDatabaseBuilder
-{
-  protected static $dmap = null;
-  protected static $tmap = null;
-  public static function getDmap()
-  {
-    if (is_null(self::$dmap)) {
-        self::$dmap = new DatabaseMap('foodb');
-    }
-    return self::$dmap;
-  }
-  public static function setTmap($tmap)
-  {
-    self::$tmap = $tmap;
-  }
-  public static function getTmap()
-  {
-    return self::$tmap;
-  }    
-}
-
-class BazTableMap extends TableMap
-{
-  public function initialize()
-  {
-    $this->setName('baz');
-    $this->setPhpName('Baz');
-  }
 }

@@ -1,11 +1,22 @@
 <?php
-
-/**
- * This file is part of the Propel package.
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
+/*
+ *  $Id: BookstoreDataPopulator.php 1249 2009-10-19 18:38:54Z francois $
  *
- * @license    MIT License
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * This software consists of voluntary contributions made by many individuals
+ * and is licensed under the LGPL. For more information please see
+ * <http://propel.phpdb.org>.
  */
 
 define('_LOB_SAMPLE_FILE_PATH', dirname(__FILE__) . '/../../../etc/lob');
@@ -24,7 +35,8 @@ class BookstoreDataPopulator
 
 	public static function populate($con = null)
 	{
-		if($con === null) {
+		if($con === null)
+		{
 			$con = Propel::getConnection(BookPeer::DATABASE_NAME);
 		}
 		$con->beginTransaction();
@@ -132,10 +144,7 @@ class BookstoreDataPopulator
 		$m1 = new Media();
 		$m1->setBook($td);
 		$m1->setCoverImage(file_get_contents($blob_path));
-		// CLOB is broken in PDO OCI, see http://pecl.php.net/bugs/bug.php?id=7943
-		if (get_class(Propel::getDB()) != "DBOracle") {
-			$m1->setExcerpt(file_get_contents($clob_path));
-		}
+		$m1->setExcerpt(file_get_contents($clob_path));
 		$m1->save($con);
 
 		// Add book list records
@@ -154,8 +163,6 @@ class BookstoreDataPopulator
 
 		$blc1->addBookListRel($brel1);
 		$blc1->addBookListRel($brel2);
-		
-		$blc1->save();
 
 		$bemp1 = new BookstoreEmployee();
 		$bemp1->setName("John");
@@ -191,74 +198,34 @@ class BookstoreDataPopulator
 		$store->setTotalBooks(500000);
 		$store->save($con);
 		
-		$summary = new BookSummary();
-		$summary->setSummarizedBook($phoenix);
-		$summary->setSummary("Harry Potter does some amazing magic!");
-		$summary->save();
-		
-		$con->commit();
-	}
-	
-	public static function populateOpinionFavorite($con = null)
-	{
-		if($con === null) {
-			$con = Propel::getConnection(BookPeer::DATABASE_NAME);
-		}
-		$con->beginTransaction();
-		
-		$book1 = BookPeer::doSelectOne(new Criteria(), $con);
-		$reader1 = new BookReader();
-		$reader1->save($con);
-		
-		$bo = new BookOpinion();
-		$bo->setBook($book1);
-		$bo->setBookReader($reader1);
-		$bo->save($con);
-		
-		$rf = new ReaderFavorite();
-		$rf->setBookOpinion($bo);
-		$rf->save($con);
-		
 		$con->commit();
 	}
 
 	public static function depopulate($con = null)
 	{
-		$peerClasses = array(
-			'AuthorPeer',
-			'BookstorePeer',
-			'BookstoreContestPeer',
-			'BookstoreContestEntryPeer',
-			'BookstoreEmployeePeer',
-			'BookstoreEmployeeAccountPeer',
-			'BookstoreSalePeer',
-			'BookClubListPeer',
-			'BookOpinionPeer',
-			'BookReaderPeer',
-			'BookListRelPeer',
-			'BookPeer',
-			'ContestPeer',
-			'CustomerPeer',
-			'MediaPeer',
-			'PublisherPeer',
-			'ReaderFavoritePeer',
-			'ReviewPeer',
-			'BookSummaryPeer',
-		);
-		// free the memory from existing objects
-		foreach ($peerClasses as $peerClass) {
-			foreach ($peerClass::$instances as $o) {
-				$o->clearAllReferences();
-			}
-		}
-		// delete records from the database
-		if($con === null) {
+		if($con === null)
+		{
 			$con = Propel::getConnection(BookPeer::DATABASE_NAME);
 		}
 		$con->beginTransaction();
-		foreach ($peerClasses as $peerClass) {
-			$peerClass::doDeleteAll($con);
-		}
+		AuthorPeer::doDeleteAll($con);
+		BookstorePeer::doDeleteAll($con);
+		BookstoreContestPeer::doDeleteAll($con);
+		BookstoreContestEntryPeer::doDeleteAll($con);
+		BookstoreEmployeePeer::doDeleteAll($con);
+		BookstoreEmployeeAccountPeer::doDeleteAll($con);
+		BookstoreSalePeer::doDeleteAll($con);
+		BookClubListPeer::doDeleteAll($con);
+		BookOpinionPeer::doDeleteAll($con);
+		BookReaderPeer::doDeleteAll($con);
+		BookListRelPeer::doDeleteAll($con);
+		BookPeer::doDeleteAll($con);
+		ContestPeer::doDeleteAll($con);
+		CustomerPeer::doDeleteAll($con);
+		MediaPeer::doDeleteAll($con);
+		PublisherPeer::doDeleteAll($con);
+		ReaderFavoritePeer::doDeleteAll($con);
+		ReviewPeer::doDeleteAll($con);
 		$con->commit();
 	}
 

@@ -1,28 +1,18 @@
 <?php
 
-/**
- * This file is part of the Propel package.
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @license    MIT License
- */
-
-require_once 'PHPUnit/Framework.php';
-require_once dirname(__FILE__) . '/../../../../runtime/lib/map/DatabaseMap.php';
-require_once dirname(__FILE__) . '/../../../../runtime/lib/map/RelationMap.php';
-require_once dirname(__FILE__) . '/../../../../runtime/lib/map/ColumnMap.php';
-require_once dirname(__FILE__) . '/../../../../runtime/lib/map/TableMap.php';
+require_once 'PHPUnit/Framework/TestCase.php';
+include_once 'propel/map/RelationMap.php';
+include_once 'propel/map/TableMap.php';
 
 /**
  * Test class for RelationMap.
  *
  * @author     François Zaninotto
- * @version    $Id: RelationMapTest.php 2168 2011-01-20 15:07:57Z francois $
+ * @version    $Id: RelationMapTest.php 1121 2009-09-14 17:20:11Z francois $
  * @package    runtime.map
  */
 class RelationMapTest extends PHPUnit_Framework_TestCase 
-{
+{ 
   protected $databaseMap, $relationName, $rmap;
 
   protected function setUp()

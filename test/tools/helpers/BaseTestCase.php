@@ -1,15 +1,7 @@
 <?php
 
-/**
- * This file is part of the Propel package.
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @license    MIT License
- */
-
-require_once dirname(__FILE__) . '/../../../runtime/lib/Propel.php';
-require_once 'PHPUnit/Framework.php';
+require_once 'propel/Propel.php';
+require_once 'PHPUnit/Framework/TestCase.php';
 
 /**
  * Base functionality to be extended by all Propel test cases.  Test
@@ -18,7 +10,7 @@ require_once 'PHPUnit/Framework.php';
  * @author     Hans Lellelid <hans@xmpl.org> (Propel)
  * @author     Daniel Rall <dlr@finemaltcoding.com> (Torque)
  * @author     Christopher Elkins <celkins@scardini.com> (Torque)
- * @version    $Revision: 1833 $
+ * @version    $Revision: 1335 $
  */
 abstract class BaseTestCase extends PHPUnit_Framework_TestCase {
 
@@ -28,4 +20,3 @@ abstract class BaseTestCase extends PHPUnit_Framework_TestCase {
 	const DEBUG = false;
 
 }
-

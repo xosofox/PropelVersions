@@ -1,372 +1,135 @@
-= What's new in Propel 1.6? =
+= What's new in Propel 1.4? =
 
-[[PageOutline]]
+Propel 1.4 is a backwards compatible evolution of Propel 1.3. It offers lots of bugfixes, some very interesting new features, speed enhancements, and a very simple upgrade path: rebuild your model after updating Propel, and your application works as always. Except it works better...
 
-Propel 1.6 is a new backwards compatible iteration of the Propel 1.x branch. As usual, don't forget to rebuild your model once you upgrade to this new version.
+== Pre and Post Hooks For `save()` And `delete()` Methods == 
 
-== Migrations ==
-
-How do you manage changes to your database as the Model evolves and the schema changes? Calling the `sql` and `insert-sql` task each time the schema is updated has one dreadful drawback: it erases all the data in the database.
-
-Starting with Propel 1.6, the `sql`-`insert-sql` sequence is replaced by the `diff`-`migrate` sequence:
+The `save()` and `delete()` methods of your generated objects are now easier to override. In fact, Propel looks for one of the following methods in your objects and executes them when needed:
 
 {{{
-> propel-gen diff
-
-[propel-sql-diff] Reading databases structure...
-[propel-sql-diff] 1 tables imported from databases.
-[propel-sql-diff] Loading XML schema files...
-[propel-sql-diff] 2 tables found in 1 schema file.
-[propel-sql-diff] Comparing models...
-[propel-sql-diff] Structure of database was modified: 1 added table, 1 modified table
-[propel-sql-diff] "PropelMigration_1286484196.php" file successfully created in /path/to/project/build/migrations
-[propel-sql-diff]   Please review the generated SQL statements, and add data migration code if necessary.
-[propel-sql-diff]   Once the migration class is valid, call the "migrate" task to execute it.
-
-> propel-gen migrate
-
-[propel-migration] Executing migration PropelMigration_1286484196 up
-[propel-migration] 4 of 4 SQL statements executed successfully on datasource "bookstore"
-[propel-migration] Migration complete. No further migration to execute.
+#!php
+<?php
+preInsert()            // code executed before insertion of a new object
+postInsert()           // code executed after insertion of a new object
+preUpdate()            // code executed before update of an existing object
+postUpdate()           // code executed after update of an existing object
+preSave()              // code executed before saving an object (new or existing)
+postSave()             // code executed after saving an object (new or existing)
+preDelete()            // code executed before deleting an object
+postDelete()           // code executed after deleting an object
 }}}
 
-`diff` compares the schema to the database, and generates a class with all the required `ALTER TABLE` and `CREATE TABLE` statements to update the database structure. This migration class then feeds the `migrate` task, which connects to the database and executes the migrations - with no data loss.
+So for instance, you can force the update of a `created_at` column in a `book` table before every insertion as follows:
 
-Migrations are a fantastic way to work on complex projects with always evolving models ; they are also a great tool for team work, since migration classes can be shared among all developers. That way, when a developer adds a table to the model, a second developer just needs to run the related migration to have the table added to the table.
+{{{
+#!php
+<?php
+class Book extends BaseBook
+{
+  public function preInsert(PropelPDO $con = null)
+  {
+    $this->setCreatedAt(time());
+  }
+}
+}}}
 
-Propel migrations can also be executed incrementally - the new `up` and `down` tasks are there for that. And when you're lost in migration, call the `status` task to chack which migrations were already executed, and which ones should be executed to update the database structure.
+Since this new feature adds a small overhead to write operations, you can deactivate it in your build properties by setting `propel.addHooks` to `false`.
 
-The Propel guide offers [wiki:Documentation/1.6/Migrations an entire chapter on Migrations] to explain how to use them and how they work.
+{{{
+#!ini
+# -------------------
+#  TEMPLATE VARIABLES
+# -------------------
+propel.addHooks = false
+}}}
 
-Migrations only work on MySQL and PostgreSQL for now. On other platforms, you should continue to use `sql` and `insert-sql`.
+== Behaviors ==
 
-== New Behaviors ==
-
-Propel 1.6 ships with more core behaviors than ever.
-
-=== Versionable behavior ===
-
-Once enabled on a table, the `versionable` behavior will store a copy of the !ActiveRecord object in a separate table each time it is saved. This allows to keep track of the changes made on an object, whether to review modifications, or revert to a previous state.
-
-The classic Wiki example is a good illustration of the utility of the `versionable` behavior:
+You can now package and reuse behaviors across your models. For instance, keeping the date of creation of an object and the date of latest update is as simple as declaring the `timestampable` behavior in the table declaration:
 
 {{{
 #!xml
-<table name="wiki_page">
+<table name="book">
   <column name="id" required="true" primaryKey="true" autoIncrement="true" type="INTEGER" />
   <column name="title" type="VARCHAR" required="true" />
-  <column name="body" type="LONGVARCHAR" />
-  <behavior name="versionable" />
+  <behavior name="timestampable" />
 </table>
 }}}
 
-After rebuild, the `WikiPage` model has versioning abilities:
+Rebuild your model, and you now have two new columns in the `book` table automatically set to the creation and update dates:
 
 {{{
 #!php
 <?php
-$page = new WikiPage();
-
-// automatic version increment
-$page->setTitle('Propel');
-$page->setBody('Propel is a CRM built in PHP');
-$page->save(); 
-echo $page->getVersion(); // 1
-$page->setBody('Propel is an ORM built in PHP5');
-$page->save();
-echo $page->getVersion(); // 2
-
-// reverting to a previous version
-$page->toVersion(1);
-echo $page->getBody(); // 'Propel is a CRM built in PHP'
-// saving a previous version creates a new one
-$page->save();
-echo $page->getVersion(); // 3
-
-// checking differences between versions
-print_r($page->compareVersions(1, 2));
-// array(
-//   'Body' => array(1 => 'Propel is a CRM built in PHP', 2 => 'Propel is an ORM built in PHP5'),
-// );
-
-// deleting an object also deletes all its versions
-$page->delete();
+$b = new Book();
+$b->setTitle('War And Peace');
+$b->save();
+echo $b->getCreatedAt(); // 2009-10-02 18:14:23
+echo $b->getUpdatedAt(); // 2009-10-02 18:14:23
+$b->setTitle('Anna Karenina');
+$b->save();
+echo $b->getCreatedAt(); // 2009-10-02 18:14:23
+echo $b->getUpdatedAt(); // 2009-10-02 18:14:25
 }}}
 
-The `versionable` behavior offers audit log functionality, so you can track who made a modification, when, and why:
+Propel behaviors occur at build time, so they have absolutely no overhead. They can modify the database schema, alter the methods generated by Propel, and add methods of their own in both the model and Peer classes. As a matter of fact, this new feature is so powerful that it requires a documentation on its own. Read it in the [wiki:Users/Documentation/1.4#HowTos HowTos] section.
+
+Propel 1.4 already bundles a few behaviors, like `timestampable` and `soft_delete`. Check the documentation linked above for more details.
+
+== Joins with multiple conditions ==
+
+You can now create joins with any number of conditions and any comparator using the new `Criteria::addMultipleJoin()` method.
 
 {{{
 #!php
 <?php
-$page = new WikiPage();
-$page->setTitle('PEAR');
-$page->setBody('PEAR is a framework and distribution system for reusable PHP components');
-$page->setVersionCreatedBy('John Doe');
-$page->setVersionComment('First draft');
-$page->save();
-// do more modifications...
-
-// list all modifications
-foreach ($page->getAllVersions() as $pageVersion) {
-  echo sprintf("'%s', Version %d, updated by %s on %s (%s)\n",
-    $pageVersion->getTitle(),
-    $pageVersion->getVersion(),
-    $pageVersion->getVersionCreatedBy(),
-    $pageVersion->getVersionCreatedAt(),
-    $pageVersion->getVersionComment(),
-  );
-}
-// 'PEAR', Version 1, updated by John Doe on 2010-12-21 22:53:02 (First draft)
-// 'PEAR', Version 2, updated by ...
+$c = new Criteria();
+$c->addMultipleJoin(array(
+    array(ReaderFavoritePeer::BOOK_ID, BookOpinionPeer::BOOK_ID),
+    array(ReaderFavoritePeer::READER_ID, BookOpinionPeer::READER_ID))
+  Criteria::INNER_JOIN);
+}}}
+{{{
+#!sql
+// SQL result
+SELECT ...
+FROM reader_favorite 
+INNER JOIN book_opinion ON (reader_favorite.BOOK_ID = book_opinion.BOOK_ID 
+                        AND reader_favorite.READER_ID = book_opinion.READER_ID)
 }}}
 
-If it was just for that, the `versionable` behavior would already be awesome. Versioning is a very common feature, and there is no doubt that this behavior will replace lots of boilerplate code. Consider the fact that it's very configurable, [wiki:Documentation/1.6/Behaviors/versionable fully documented], and unit tested, and there is no reason to develop your own versioning layer.
-
-But there is more. The `versionable` behavior also works on relationships. If the `WikiPage` has one `Category`, and if the `Category` model also uses the `versionable` behavior, then each time a `WikiPage` is saved, it saves the version of the related `Category` it is related to, and it is able to restore it:
+You can add a third operator to each join condition to allow complex joins:
 
 {{{
 #!php
 <?php
-$category = new Category();
-$category->setName('Libraries');
-$page = new WikiPage();
-$page->setTitle('PEAR');
-$page->setBody('PEAR is a framework and distribution system for reusable PHP components');
-$page->setCategory($category);
-$page->save(); // version 1
-
-$page->setTitle('PEAR - PHP Extension and Application Repository');
-$page->save(); // version 2
-
-$category->setName('PHP Libraries');
-$page->save(); // version 3
-
-$page->toVersion(1);
-echo $page->getTitle(); // 'PEAR'
-echo $page->getCategory()->getName(); // 'Libraries'
-$page->toVersion(3);
-echo $page->getTitle(); // 'PEAR - PHP Extension and Application Repository'
-echo $page->getCategory()->getName(); // 'PHP Libraries'
+$c = new Criteria();
+$c->addMultipleJoin(array(
+    array(Book::USER_ID, UserPeer::ID))
+    array(UserPeer::RANK, 12, Criteria::GREATER_THAN),
+  Criteria::LEFT_JOIN);
 }}}
-
-Now the versioning is not limited to a single class anymore. You can even design a fully versionable '''application''' - it all depends on your imagination.
-
-=== I18n behavior ===
-
-The `i18n` behavior provides support for internationalization on the model. Using this behavior, the text columns of an !ActiveRecord object can have several translations.
-
-This is useful in multilingual applications, such as an e-commerce website selling home appliances across the world. This website should keep the name and description of each item separated from the other details, and keep one version for each supported language.
-
-Starting with Propel 1.6, this is possible by adding a simple `<behavior>` tag to the table that needs internationalization:
-
 {{{
-#!xml
-<table name="item">
-  <column name="id" required="true" primaryKey="true" autoIncrement="true" type="INTEGER" />
-  <column name="name" type="VARCHAR" required="true" />
-  <column name="description" type="LONGVARCHAR" />
-  <column name="price" type="FLOAT" />
-  <column name="is_in_store" type="BOOLEAN" />
-  <behavior name="i18n">
-    <parameter name="i18n_columns" value="name, description" />
-  </behavior>
-</table>
+#!sql
+// SQL result
+SELECT ...
+FROM book
+LEFT JOIN user ON (book.USER_ID = user.ID AND user.RANK > 12)
 }}}
 
-In this example, the `name` and `description` columns are moved to a new table, called `item_i18n`, which shares a many-to-one relationship with Item - one Item has many Item translations. But all this happens in the background; for the end user, everything happens as if there were only one main `Item` object:
+Note that the former way to define a composite join using arrays as arguments of `addJoin()` is deprecated.
 
-{{{
-#!php
-<?php
-$item = new Item();
-$item->setPrice('12.99');
-$item->setName('Microwave oven');
-$item->save();
-}}}
+== Full Query Logging ==
 
-This creates one record in the `item` table with the price, and another in the `item_i18n` table with the English (default language) translation for the name. Of course, you can add more translations:
+Propel can now log all the queries issued to the database in their exact syntax, including parameter binding. That means that you can easily copy a query from the Propel logs and execute it in your database to see the result immediately.
 
-{{{
-#!php
-<?php
-$item->setLocale('fr_FR');
-$item->setName('Four micro-ondes');
-$item->setLocale('es_ES');
-$item->setName('Microondas');
-$item->save();
-}}}
+In addition, Propel can log the time and memory spent on every query, or only on slow query, depending on a treshold that you can customize.
 
-This works both for setting AND for getting internationalized columns:
+Last but not least, you can check the number of executer queries and the SQL code of the latest executed query at runtime.
 
-{{{
-#!php
-<?php
-$item->setLocale('en_EN');
-echo $item->getName(); //'Microwave oven'
-$item->setLocale('fr_FR');
-echo $item->getName(); // 'Four micro-ondes'
-}}}
+Propel 1.2 users may not find these features spectacular, but by switching from Creole to PDO, Propel lost its powerful logging abilities in version 1.3. Propel 1.4 logging is now on par with Propel 1.2 logging again.
 
-'''Tip''': The big advantage of Propel behaviors is that they use code generation. Even though it's only a proxy method to the `ItemI18n` class, `Item::getName()` has all the phpDoc required to make your IDE happy.
-
-This new behavior also adds special capabiliies to the Query objects. The most interesting allows you to execute less queries when you need to query for an Item and one of its translations - which is common to display a list of items in the locale of the user:
-
-{{{
-#!php
-<?php
-$items = ItemQuery::create()->find(); // one query to retrieve all items
-$locale = 'en_EN';
-foreach ($items as $item) {
-  echo $item->getPrice();
-  $item->setLocale($locale);
-  echo $item->getName(); // one query to retrieve the English translation
-}
-}}}
-
-This code snippet requires 1+n queries, n being the number of items. But just add one more method call to the query, and the SQL query count drops to 1:
-
-{{{
-#!php
-<?php
-$items = ItemQuery::create()
-  ->joinWithI18n('en_EN')
-  ->find(); // one query to retrieve both all items and their translations
-foreach ($items as $item) {
-  echo $item->getPrice();
-  echo $item->getName(); // no additional query
-}
-}}}
-
-In addition to hydrating translations, `joinWithI18n()` sets the correct locale on results, so you don't need to call `setLocale()` for each result.
-
-'''Tip''': `joinWithI18n()` adds a left join with two conditions. That means that the query returns all items, including those with no translation. If you need to return only objects having translations, add `Criteria::INNER_JOIN` as second parameter to `joinWithI18n()`.
-
-Last but not least, Propel's `i18n` behavior is a drop-in replacement for symfony's `i18n` behavior. That means that with a couple more parameters, the locale can be accessed using `setCulture()`, and the `i18n_columns` parameter can be omitted if you explicit the `i18n` table.
-
-Just like the `versionable` behavior, the `i18n` behavior is thoroughly unit-tested and [wiki:Documentation/1.6/Behaviors/i18n fully documented].
-
-== XML/YAML/JSON/CSV Parsing and Dumping ==
-
-ActiveRecord and Collection objects now have the ability to be converted to and from a string, using any of the XML, YAML, JSON, and CSV formats.
-
-The syntax is very intuitive: ActiveRecord and collection objects now offer a `toXML()` and a `fromXML()` method (same for YAML, JSON, and CSV). Here are a few examples:
-
-{{{
-#!php
-<?php
-// dump a collection to YAML
-$books = BookQuery::create()
-  ->orderByTitle()
-  ->joinWith('Author')
-  ->find();
-echo $books->toYAML();
-// Book_1:
-//   Id: 123
-//   Title: Pride and Prejudice
-//   AuthorId: 456
-//   Author:
-//     Id: 456
-//     FirstName: Jane
-//     LastName: Austen
-// Book_2:
-//   Id: 789
-//   Title: War and Peace
-//   AuthorId: 147
-//   Author:
-//     Id: 147
-//     FirstName: Leo
-//     LastName: Tolstoi
-
-// parse an XML string into an object
-$bookString = <<<EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<data>
-  <Id>9012</Id>
-  <Title><![CDATA[Don Juan]]></Title>
-  <ISBN><![CDATA[0140422161]]></ISBN>
-  <Price>12.99</Price>
-  <PublisherId>1234</PublisherId>
-  <AuthorId>5678</AuthorId>
-</data>
-EOF;
-$book = new Book();
-$book->fromXML($bookString);
-echo $book->getTitle(); // Don Juan
-}}}
-
-== Model Objects String Representation ==
-
-Taking advantage of the dumping abilities just introduced, all ActiveRecord objects now have a string representation based on a YAML dump of their properties:
-
-{{{
-#!php
-<?php
-$author = new Author();
-$author->setFirstName('Leo');
-$author->setLastName('Tolstoi');
-echo $author;
-// Id: null
-// FirstName: Leo
-// LastName: Tolstoi
-// Email: null
-// Age: null
-}}}
-
-'''Tip''': Tables with a column using the `isPrimaryString` attribute still output the value of a single column as string representation.
-
-`PropelCollection` objects also take advantage from this possibility:
-
-{{{
-#!php
-<?php
-$authors = AuthorQuery::create()
-  ->orderByLastName()
-  ->find();
-echo $authors;
-// Author_0:
-//   Id: 456
-//   FirstName: Jane
-//   LastName: Austen
-//   Email: null
-//   Age: null
-// Author_1:
-//   Id: 147
-//   FirstName: Leo
-//   LastName: Tolstoi
-//   Email: null
-//   Age: null
-}}}
-
-If you want to use another format for the default string representation instead of YAML, you can set the `defaultStringFormat` attribute to any of the supported formats in either the `<database>` or the `<table>` elements in the XML schema:
-	
-{{{
-#!xml
-<table name="publisher" defaultStringFormat="XML">
-  <column name="id" required="true" primaryKey="true" autoIncrement="true" type="INTEGER" />
-  <column name="name" required="true" type="VARCHAR" size="128" />
-</table>
-}}}
-
-{{{
-#!php
-<?php
-$publisher = new Publisher();
-$publisher->setName('Penguin');
-echo $publisher;
-// <?xml version="1.0" encoding="UTF-8"?>
-// <data>
-//   <Id></Id>
-//   <Name><![CDATA[Peguin]]></Name>
-// </data>
-}}}
-
-== Multiple Buildtime Connections ==
-
-Propel 1.5 used the `build.properties` for buildtime connection settings. This had one major drawback: it used to be impossible to deal with several connections at buildtime, let alone several RDBMS.
-
-In Propel 1.6, you can write your buildtime connection settings in a `buildtime-conf.xml` file. The format is the same as the `runtime-conf.xml` file, so a good starting point is to copy the runtime conf, and change the settings for users wit hgreater privileges.
-
-Here is an example buildtime configuration file that defines a MySQL and a SQLite connection:
+All this is possible thanks to a new connection class, called `DebugPDO`. To enable it, just change the connection `<classname>` to 'DebugPDO' in the `runtime-conf.xml` file, as follows:
 
 {{{
 #!xml
@@ -375,262 +138,240 @@ Here is an example buildtime configuration file that defines a MySQL and a SQLit
   <propel>
     <datasources default="bookstore">
       <datasource id="bookstore">
-        <adapter>mysql</adapter>
-        <connection>
-          <dsn>mysql:host=localhost;dbname=bookstore</dsn>
-          <user>testuser</user>
-          <password>password</password>
-        </connection>
-      </datasource>
-      <datasource id="cms">
         <adapter>sqlite</adapter>
         <connection>
-          <dsn>sqlite:/opt/databases/mydb.sq3</dsn>
-        </connection>
-      </datasource>
-    </datasources>
-  </propel>
-</config>
+          <classname>DebugPDO</classname>
 }}}
 
-Now that Propel can deal with database vendors at buildtime more accurately, the generated classes offer more optimizations for the database they rely one. Incidentally, that means that you should rebuild your model if you use different database vendors. Thats includes cases when your developement and production environments use different vendors.
+That's all. After this change, Propel logs all the queries executed at runtime in its default log file:
 
-== Support For SQL Schemas ==
+{{{
+time:  0.002 sec | mem: 1.4 MB | INSERT INTO publisher (`ID`,`NAME`) VALUES (NULL,'William Morrow')
+time:  0.000 sec | mem: 1.4 MB | INSERT INTO author (`ID`,`FIRST_NAME`,`LAST_NAME`) VALUES (NULL,'J.K.','Rowling')
+time:  0.000 sec | mem: 1.6 MB | INSERT INTO book (`ID`,`TITLE`,`ISBN`,`PRICE`,`PUBLISHER_ID`,`AUTHOR_ID`) VALUES (NULL,'Harry Potter and the Order of the Phoenix','043935806X',10.99,53,58)
+time:  0.000 sec | mem: 1.7 MB | INSERT INTO review (`ID`,`REVIEWED_BY`,`REVIEW_DATE`,`RECOMMENDED`,`BOOK_ID`) VALUES (NULL,'Washington Post','2009-10-04',1,52)
+...
+time:  0.001 sec | mem: 2.1 MB | SELECT bookstore_employee_account.EMPLOYEE_ID, bookstore_employee_account.LOGIN FROM `bookstore_employee_account` WHERE bookstore_employee_account.EMPLOYEE_ID=25
+}}}
 
-For complex models showing a large number of tables, database administrators often like to group tables into "SQL schemas", which are namespaces in the SQL server. Starting with Propel 1.6, it is now possible to assign tables to SQL schemas using the `schema` attribute in the `<database>` of the `<table>` tag:
+Check the [wiki:Users/Documentation/1.4/Full-Query-Logging Full Query Logging Documentation] for details on the `DebugPDO` documentation.
+
+== Generated `__toString()` in Base Object ==
+
+Propel can generate a `__toString()` method for your Model objects if you define a column as `primaryString` in the schema:
 
 {{{
 #!xml
-<database name="my_connection">
-  <table name="book" schema="bookstore">
-    <column name="id" required="true" primaryKey="true" autoIncrement="true" type="INTEGER" />
-    <column name="title" type="VARCHAR" required="true" />
-    <column name="author_id" type="INTGER" />
-    <foreign-key foreignTable="author" foreignSchema="people" onDelete="setnull" onUpdate="cascade">
-      <reference local="author_id" foreign="id" />
-    </foreign-key>
-  </table>
-  <table name="author" schema="people">
-    <column name="id" required="true" primaryKey="true" autoIncrement="true" type="INTEGER" />
-    <column name="name" type="VARCHAR" required="true" />
-  </table>
-</database>
-}}}
-
-'''Tip''': This feature is only available in PostgreSQL, MSSQL, and MySQL. The `schema` attribute is simply ignored in Oracle and SQLite.
-
-Propel also supports foreign keys between tables assigned to two different schemas. For MySQL, where "SQL schema" is a synonym for "database", this allows for cross-database queries.
-
-The Propel documentation contains a new tutorial about the SQL schema attributes and usage, called [wiki:Documentation/1.6/Using-SQL-Schemas Using SQL Schemas].
-
-== Foreign Key Filters Now Accept a Collection ==
-
-The generated `filterByRelationName()` methods in the model queries now accept a `PropelCollection` as argument. This will allow you to keep using objects and avoid dealing with foreign keys completely:
-
-{{{
-#!php
-<?php
-// get young authors
-$authors = AuthorQuery::create()
-  ->filterByAge(array('max' => 35))
-  ->find(); // $authors is a PropelObjectCollection
-// get all books by young authors
-$books = BookQuery::create()
-  ->filterByAuthor($authors) // <= That's new
-  ->find();
-}}}
-
-== Join With Several Conditions ==
-
-Creating a Join with more than one connection is now very easy. Just call `ModelCriteria::addJoinCondition($joinName, $condition)` after a `ModelCriteria::join()` to add further conditions to a join:
-
-{{{
-#!php
-<?php
-$authors = AuthorQuery::create()
-  ->join('Author.Book')
-  ->addJoinCondition('Book', 'Book.Title IS NOT NULL')
-  ->find();
-// SELECT * FROM author
-// INNER JOIN book ON (author.ID=book.AUTHOR_ID AND book.TITLE IS NOT NULL);
-}}}
-
-If you need to bind a variable to the condition, set the variable as last parameter of the `addJoinCondition()` call. Propel correctly binds the value using PDO:
-
-{{{
-#!php
-<?php
-$authors = AuthorQuery::create()
-  ->join('Author.Book')
-  ->addJoinCondition('Book', 'Book.Title LIKE ?', 'War%')
-  ->find();
-// SELECT * FROM author
-// INNER JOIN book ON (author.ID=book.AUTHOR_ID AND book.TITLE LIKE 'War%');
-}}}
-
-'''Tip''': `Criteria::addMultipleJoin()`, which allowed the same feature to some extent in previous versions, is now deprecated, since it was vulnerable in SQL injection attacks.
-
-== Advanced Column Types ==
-
-Propel 1.6 introduces a new set of column types. The database-agnostic implementation allows these column types to work on all supported RDBMS.
-
-=== ENUM Columns ===
-
-Although stored in the database as integers, ENUM columns let users manipulate a set of predefined values, without worrying about their storage.
-
-{{{
-#!xml
-<table name="book">
-  ...
-  <column name="style" type="ENUM" valueSet="novel, essay, poetry" />
+<table name="book" phpName="Book">
+  ..
+  <column name="title" type="varchar" size="125" primaryString="true" />
+  ..
 </table>
-}}}
+}}}   
+
+After a model build, the generated `BaseBook` class offers the following magic method:
 
 {{{
 #!php
 <?php
-// The ActiveRecord setter and getter let users use any value from the valueSet
-$book = new Book();
-$book->setStyle('novel');
-echo $book->getStyle(); // novel
-// Trying to set a value not in the valueSet throws an exception
-
-// Each value in an ENUM column has a related constant in the Peer class
-// Your IDE with code completion should love this
-echo BookPeer::STYLE_NOVEL;  // 'novel'
-echo BookPeer::STYLE_ESSAY;  // 'essay'
-echo BookPeer::STYLE_POETRY; // 'poetry'
-// The Peer class also gives access to list of available values
-print_r(BookPeer::getValueSet(BookPeer::STYLE)); // array('novel', 'essay', 'poetry')
-
-// ENUM columns are also searchable, using the generated filterByXXX() method
-// or other ModelCritera methods (like where(), orWhere(), condition())
-$books = BookQuery::create()
-  ->filterByStyle('novel')
-  ->find();
-}}}
-
-=== OBJECT Columns ===
-
-An `OBJECT` column can store PHP objects (mostly Value Objects) in the database. The column setter serializes the object, which is later stored to the database as a string. The column getter unserializes the string and returns the object. Therefore, for the end user, the column contains an object.
-
-{{{
-#!php
-<?php
-class GeographicCoordinates
+public function __toString()
 {
-  public $latitude, $longitude;
-  
-  public function __construct($latitude, $longitude)
+  return (string) $this->getTitle();
+}
+}}}
+
+That means that the default string representation of `Book` objects is the value of the `title` column:
+
+{{{
+#!php
+<?php
+$book = new book();
+$book->setTitle('War And Peace');
+echo $book; // 'War And Peace'
+}}}
+
+== New Peer constant: OM_CLASS ==
+
+Did you ever try to get the Propel Model class related to a Peer class? If you did, you probably noticed that the only available constant providing this information also contained package information:
+
+{{{
+#!php
+<?php
+// in BaseBookPeer.php
+/** A class that can be returned by this peer. */
+const CLASS_DEFAULT = 'bookstore.Book';
+}}}
+
+This can be useful if you don't use autoloading; but if you do, retrieving the actual Propel model class name involved some string operations to remove the package information. This is no more necessary in Propel 1.4, since the Peer classes offer a new constant:
+
+{{{
+#!php
+<?php
+// in BaseBookPeer.php
+/** the related Propel class for this table */
+const OM_CLASS = 'Book';
+}}}
+
+The generated Peer methods now use this constant and avoid string operations. Therefore, they should be slightly faster.
+
+== PropelPager Implements Countable and Iterator Interfaces ==
+
+Did you know Propel offered a pagination utility class? It just got better, by now supporting the `Countable` and `Iterator` interfaces. That means that you can manipulate a `PropelPager` object as if it was an array:
+
+{{{
+#!php
+<?php
+$c = new Criteria();
+$c->add(BookPeer::AUTHOR, $authorId);
+$pager = new PropelPager($c, 'BookPeer', 'doSelect', $page = 1, $rowsPerPage = 20);
+
+if(count($pager)) // if the current page has results
+{
+  foreach($pager as $book) // get pager results and iterate on them
   {
-    $this->latitude = $latitude;
-    $this->longitude = $longitude;
-  }
-  
-  public function isInNorthernHemisphere()
-  {
-    return $this->latitude > 0;
+    echo $book->getTitle();
   }
 }
-
-// The 'house' table has a 'coordinates' column of type OBJECT
-$house = new House();
-$house->setCoordinates(new GeographicCoordinates(48.8527, 2.3510));
-echo $house->getCoordinates()->isInNorthernHemisphere(); // true
-$house->save();
 }}}
 
-Not only do `OBJECT` columns benefit from these smart getter and setter in the generated Active Record class, they are also searchable using the generated `filterByXXX()` method in the query class:
+Note that the `PropelPager` utility has a brand new documentation in the [wiki:Users/Documentation/1.4#HowTos HowTos] section. 
+
+== Better Introspection at Runtime ==
+
+A few methods were added to the Map classes to ease runtime introspection, as well as a new `RelationMap` class to describe database relationships:
+{{{
+TableMap    DatabaseMap::getTableByPhpName($name) // TableMap object by object model name, e.g. 'Book'
+ColumnMap   DatabaseMap::getColumn($name) // ColumnMap object by fully qualified name, e.g. book.AUTHOR_ID
+Array       TableMap::getPrimaryKeys()    // List of the ColumnMap objects corresponding to the table primary keys
+Array       TableMap::getForeignKeys()    // List of the ColumnMap objects corresponding to the table foreign keys
+Array       TableMap::getRelations()      // List of the table relationships, as RelationMap objects
+String      TableMap::getPackage()        // Package of the table
+mixed       ColumnMap::getDefaultValue()  // Default value defined in the schema for this column
+TableMap    ColumnMap::getRelatedTable()  // Related TableMap object by foreign key
+ColumnMap   ColumnMap::getRelatedColumn() // Related ColumnMap object by foreign key
+RelationMap ColumnMap::getRelation()      // Related RelationMap object   
+integer     RelationMap::getType()        // RelationMap::ONE_TO_MANY, RelationMap::MANY_TO_ONE, or RelationMap::ONE_TO_ONE
+string      RelationMap::getOnDelete()    // ON DELETE directive, e.g. 'SET NULL'
+TableMap    RelationMap::getLocalTable()  // Local TableMap object (the one bearing the fkey)
+TabkeMap    RelationMap::getForeignTable()   // Foreign TableMap object
+Array       RelationMap::getColumnMappings() // List of local => foreign column for this relation, e.g array('book.PUBLISHER_ID' => 'publisher.ID')
+Array       RelationMap::getLocalColumns()   // List of the ColumnMap objects on the local side of the relation
+Array       RelationMap::getForeignColumns() // List of the ColumnMap objects on the foreign side of the relation
+}}}
+
+Check the new [wiki:Users/Documentation/1.4/Runtime-Introspection Runtime Introspection] documentation in the [wiki:Users/Documentation/1.4#HowTos HowTos] section for a complete description of the introspection API.
+
+Also, it is now much easier to get the name of the Propel object class from the Peer class:
+{{{
+echo BookPeer::getOMClass()                    => 'bookstore.Book'
+echo BookPeer::getOMClass($withPrefix = false) => 'Book'
+}}}
+
+== MapBuilders are gone ==
+
+Runtime introspection used to rely on runtime builder classes for TableMap objects, called MapBuilders. These classes are not generated anymore by Propel. Instead, Propel generates TableMap classes that are easier to deal with. 
+
+The standard way to get a TableMap through the Peer classes works just the same as before:
 
 {{{
 #!php
 <?php
-$house = HouseQuery::create()
-  ->filterByCoordinates(new GeographicCoordinates(48.8527, 2.3510))
-  ->find();
+$bookTableMap = BookPeer::getTableMap();
 }}}
 
-Propel looks in the database for a serialized version of the object passed as parameter of the `filterByXXX()` method.
-
-=== ARRAY Columns ===
-
-An `ARRAY` column can store a simple PHP array in the database (nested arrays and associative arrays are not accepted). The column setter serializes the array, which is later stored to the database as a string. The column getter unserializes the string and returns the array. Therefore, for the end user, the column contains an array.
+But building TableMaps by hand is a lot easier:
 
 {{{
 #!php
 <?php
-// The 'book' table has a 'tags' column of type ARRAY
-$book = new Book();
-$book->setTags(array('novel', 'russian'));
-print_r($book->getTags()); // array('novel', 'russian')
+// Propel 1.3 way to initialize a TableMap
+$className = 'Book';
+$mapBuilderClass = $className . 'MapBuilder';
+$mapBuilder = new $mapBuilderClass();
+if (!$mapBuilder->isBuilt())
+{
+  $mapBuilder->doBuild();
+}
+$bookTableMap = $databaseMap->getTable('book');
 
-// If the column name is plural, Propel also generates hasXXX(), addXXX(),
-// and removeXXX() methods, where XXX is the singular column name
-echo $book->hasTag('novel'); // true
-$book->addTag('romantic');
-print_r($book->getTags()); // array('novel', 'russian', 'romantic')
-$book->removeTag('russian');
-print_r($book->getTags()); // array('novel', 'romantic')
+// Propel 1.4 way to initialize a TableMap
+$className = 'Book';
+$tableMapClass = $className . 'TableMap';
+$bookTableMap = $databaseMap->addTableFromMapClass($tableMapClass);
 }}}
 
-Propel doesn't use `serialize()` to transform the array into a string. Instead, it uses a special serialization function, that makes it possible to search for values of `ARRAY` columns.
+Note that if you want to make sure that all the tables related to a given table have their TableMaps loaded, you just need to ask for the table relations:
 
 {{{
 #!php
 <?php
-// Search books that contain all the specified tags
-$books = BookQuery::create()
-  ->filterByTags(array('novel', 'russian'), Criteria::CONTAINS_ALL)
-  ->find();
-
-// Search books that contain at least one of the specified tags
-$books = BookQuery::create()
-  ->filterByTags(array('novel', 'russian'), Criteria::CONTAINS_SOME)
-  ->find();
-
-// Search books that don't contain any of the specified tags
-$books = BookQuery::create()
-  ->filterByTags(array('novel', 'russian'), Criteria::CONTAINS_NONE)
-  ->find();
-
-// If the column name is plural, Propel also generates singular filter methods
-// expecting a scalar parameter instead of an array
-$books = BookQuery::create()
-  ->filterByTag('russian')
-  ->find();
+// build all the TableMap objects of tables related to Book
+$relations = $bookTableMap->getRelations();
 }}}
 
-'''Tip''': Filters on array columns translate to SQL as LIKE conditions. That means that the resulting query often requires a full table scan, and is not suited for large tables.
+== New Build Options ==
 
-'''Warning''': Only generated Query classes (through generated `filterByXXX()` methods) and `ModelCriteria` (through `where()`, `orWhere()`, and `condition()`) allow conditions on `ENUM`, `OBJECT`, and `ARRAY` columns. `Criteria` alone (through `add()`, `addAnd()`, and `addOr()`) does not support conditions on such columns.
-
-== Better Pluralizer ==
-
-Have you ever considered Propel as a lame English speaker? Due to its poor pluralizer, Propel used to be unable to create proper getter methods in one-to-many relationships when dealing with foreign objects named 'Child', 'Category', 'Wife', or 'Sheep'.
-
-Starting with Propel 1.6, Propel adds a new pluralizer class named `StandardEnglishPluralizer`, which should take care of most of the irregular plural forms of your domain class names. This new pluralizer is disabled by default for backwards compatibility reasons, but it's very easy to turn it on in your `build.properties` file:
+You now have more control over the generated classes, through three new settings in `build.properties`:
 
 {{{
-#!ini
-propel.builder.pluralizer.class = builder.util.StandardEnglishPluralizer
+propel.addValidateMethod = {true}|false
+}}}
+Whether to add `validate()` method to your classes. Set to false if you don't use Propel validation. 
+
+{{{
+propel.addIncludes = {true}|false
+}}}
+Whether to add `require` statements on the generated stub classes. Set to false if you autoload every class at runtime.
+
+{{{
+propel.addHooks = {true}|false
+}}}
+Whether to support pre- and post- hooks on `save()` and `delete()` methods. Set to false if you never use these hooks for a small speed boost.
+
+== Foreign Key Retrievers Now Use Instance Pool ==
+
+When you retrieve an object related to the current model object by a foreign key, you usually use a method generated by Propel, as follows:
+
+{{{
+#!php
+<?php
+$author = $book->getAuthor(); // $author is an Author instance
 }}}
 
-Rebuild your model, and voila: ActiveRecord objects can now retrieve foreign objects using `getChildren()`, `getCategories()`, `getWives()`, and... `getSheep()`.
+Behind the curtain, this method uses the `author_id` property of the current book object, makes a query to the database for the related `author` record, and hydrates an `Author` object with the result. But what if you already have hydrated this author object earlier in the script? Thanks to instance pooling, Propel remembers the objects it has in memory, which can save a lot of database queries. For instance:
 
-== New Reference Chapter in the Documentation: Active Record ==
+{{{
+#!php
+<?php
+foreach($author->getBooks() as $book)
+{
+	echo $book->getTitle();
+  echo $book->getAuthor()->getName();
+}
+}}}
 
-There wasn't any one-stop place to read about the abilities of the generated Active Record objects in the Propel documentation. Since Propel 1.6, the new [wiki:Documentation/1.6/ActiveRecord Active Record reference] makes it easier to learn the  usage of Propel models using code examples.
+In Propel 1.3, this code would issue n+1 queries to the database (n being the number of books written by $author). But with Propel 1.4, this code only executes one query. As the `getAuthor()` method is called, Propel knows that the author of each book is already in memory, and therefore skips the database query and the hydration process altogether. hte result is a slight speed boost, and a decrease in the number of queries executed per page.
 
-== Miscellaneous ==
+== `BasePeer::populateStmtValues()` is now public ==
 
- * A new `dbd2propel` task allows to convert [http://www.fabforce.net/dbdesigner4/ DBDesigner 4] models to a Propel schema in an easier way than the previous PHP script located under the `contrib/` folder. See the new [wiki:Documentation/1.6/DBDesigner DBDesigner2Propel chapter] for details.
- * By the way, the `contrib/` directory was removed from the core - it was not maintained anymore. Previous versions can be found in the 1.5 branch.
- * `ModelCriteria::keepQuery()` is now ON by default. This will remove bad surprises when doing a `count()` before a `find()`, and has a very limited impact on performance. You should not need to manually call `keepQuery()` anymore.
- * `ModelCriteria::with()` is now a little smarter, and therefore reduces even more the query count when hydrating one-to-many relationships.
- * Runtime Exceptions now look better in PHP 5.3, since Propel takes advantage of exception linking
- * Read queries (issued by Query termination methods `findPk()`, `find()`, `findOne()`, and `count()`) now don't create a transaction by default. Write queries still do.
- * The generated `toArray()` method for !ActiveRecord objects can now include collections, without risk of infinite recursion. Therefore `$author->toArray()` also outputs the collection of Books by the author. The dumping abilities introduced in 1.6 take advantage of this feature.
- * `PropelModelPager` now behaves more like a `PropelCollection`, thanks to the addition of `isFirst()`, `isLast()`, `isOdd()`, and `isEven()` methods. That means that it's easier to replace a `find()` by a `paginate()` as termination method for a query if there is a complex formatting.
- * Despite all that you may have read about PHP 5.3's garbage collector, memory leaks still exist on some particular circular references. Propel generates a `clearAllReferences()` method on all !ActiveRecord classes, and this method has been improved in Propel 1.6 to handle the existing leaks. Use it when you iterate on large collections of objects, or where the memory is limited.
- * For each database, Behaviors are now added to a priority queue. This allows to execute some behaviors before others, and to solve conflicts between behaviors. See [wiki:Documentation/1.6/Writing-Behavior#SpecifyingaPriorityForBehaviorExecution Hpw to Write a Behavior].
- * Propel now supports tablespace definition on Oracle tables using custom `<vendor>` tags. See the [wiki:Documentation/1.6/Schema#AddingVendorInfo Schema reference] for details.
+You can now use a SQL query of your own, or modify the one returned by `BasePeer::createSelectSql()`, and use the binding capabilities of Propel to populate a query with a set of values. Propel uses the PDO type of the column to do the binding, so this method may save you some hassle: 
+
+{{{
+#!php
+<?php
+$sql = BasePeer::createSelectSql($criteria, $params);
+$sql = "INSERT INTO temp_table_name $sql";
+$stmt = $con->prepare($sql);
+BasePeer::populateStmtValues($stmt, $params, $dbMap, $db);
+$stmt->execute();
+}}}
+
+== Documentation Reorganization ==
+
+The Propel documentation now lies in the Subversion repository. It becomes easier to contribute and trace documentation changes, attach corrections to tickets, and bundle the Propel library as a self-containing package.
+
+Of course, the documentation has been updated to reflect all the changes described above, and all the new features are fully documented.
+
+== Twice As Many Unit Tests ==
+
+The Propel 1.4 development process introduced Test-Driven Development. As a consequence, the number of unit tests in the Propel codebase has dramatically increased. In fact, it has more than doubled since Propel 1.3. Propel is still far from a large unit test code coverage, but the stability and robustness of the Propel library get better every day.

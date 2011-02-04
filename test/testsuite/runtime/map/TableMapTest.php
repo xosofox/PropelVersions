@@ -1,29 +1,56 @@
 <?php
 
-/**
- * This file is part of the Propel package.
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @license    MIT License
- */
+require_once 'PHPUnit/Framework/TestCase.php';
+include_once 'propel/map/ColumnMap.php';
+include_once 'propel/map/TableMap.php';
 
-require_once 'PHPUnit/Framework.php';
-require_once dirname(__FILE__) . '/../../../../runtime/lib/map/ColumnMap.php';
-require_once dirname(__FILE__) . '/../../../../runtime/lib/map/RelationMap.php';
-require_once dirname(__FILE__) . '/../../../../runtime/lib/map/TableMap.php';
-require_once dirname(__FILE__) . '/../../../../runtime/lib/map/DatabaseMap.php';
-require_once dirname(__FILE__) . '/../../../../runtime/lib/exception/PropelException.php';
+class TestableTableMap extends TableMap
+{
+  public function hasPrefix($data)
+  {
+    return parent::hasPrefix($data);
+  }
+
+  public function removePrefix($data)
+  {
+    return parent::removePrefix($data);
+  }
+  
+  public function normalizeColName($name)
+  {
+    return parent::normalizeColName($name);
+  }
+}
+
+class FooTableMap extends TableMap
+{ 
+  public $rmap;
+  public function buildRelations()
+  {
+    $this->rmap = $this->addRelation('Bar', 'Bar', RelationMap::MANY_TO_ONE);
+  }
+}
+
+class BarTableMap extends TableMap
+{
+  public function initialize()
+  {
+    $this->setName('bar');
+    $this->setPhpName('Bar');
+  }
+}
+
+
 
 /**
  * Test class for TableMap.
  *
  * @author     François Zaninotto
- * @version    $Id: TableMapTest.php 2168 2011-01-20 15:07:57Z francois $
+ * @version    $Id: TableMapTest.php 1121 2009-09-14 17:20:11Z francois $
  * @package    runtime.map
  */
 class TableMapTest extends PHPUnit_Framework_TestCase 
-{
+{ 
   protected $databaseMap;
 
   protected function setUp()
@@ -81,7 +108,7 @@ class TableMapTest extends PHPUnit_Framework_TestCase
   public function testGetColumn()
   {
     $column = $this->tmap->addColumn('BAR', 'Bar', 'INTEGER');
-    $this->assertEquals($column, $this->tmap->getColumn('BAR'), 'getColumn returns a ColumnMap according to a column name');
+    $this->assertEquals($column, $this->tmap->getColumn('BAR'), 'getColumn returns a ColumnMap according to a column mame');
     try
     {
       $this->tmap->getColumn('FOO');
@@ -92,17 +119,6 @@ class TableMapTest extends PHPUnit_Framework_TestCase
     {
       $this->tmap->getColumn('foo.bar', false);
       $this->fail('getColumn accepts a $normalize parameter to skip name normalization');
-    } catch(PropelException $e) {}
-  }
-
-  public function testGetColumnByPhpName()
-  {
-    $column = $this->tmap->addColumn('BAR_BAZ', 'BarBaz', 'INTEGER');
-    $this->assertEquals($column, $this->tmap->getColumnByPhpName('BarBaz'), 'getColumnByPhpName() returns a ColumnMap according to a column phpName');
-    try
-    {
-      $this->tmap->getColumn('Foo');
-      $this->fail('getColumnByPhpName() throws an exception when called on an inexistent column');
     } catch(PropelException $e) {}
   }
   
@@ -168,17 +184,15 @@ class TableMapTest extends PHPUnit_Framework_TestCase
     $expected = array('BAR' => $column1, 'BAZZ' => $column3);
     $this->assertEquals($expected, $this->tmap->getForeignKeys(), 'getForeignKeys() returns an array of the table foreign keys');
   }
-
-	/**
-	 * @expectedException PropelException
-	 */
-  public function testLoadWrongRelations()
-  {
-    $this->tmap->getRelation('Bar');
-  }
   
   public function testLazyLoadRelations()
   {
+    try {
+      $this->tmap->getRelation('Bar');
+      $this->fail('getRelation() throws an exception when called on a table with no relations');    
+    } catch (PropelException $e) {
+      $this->assertTrue(true, 'getRelation() throws an exception when called on a table with no relations');
+    }
     $foreigntmap = new BarTableMap();
     $this->databaseMap->addTableObject($foreigntmap);
     $localtmap = new FooTableMap();
@@ -190,20 +204,20 @@ class TableMapTest extends PHPUnit_Framework_TestCase
   public function testAddRelation()
   {
     $foreigntmap1 = new TableMap('bar');
-    $foreigntmap1->setClassname('Bar');
+    $foreigntmap1->setPhpName('Bar');
     $this->databaseMap->addTableObject($foreigntmap1);
     $foreigntmap2 = new TableMap('baz');
-    $foreigntmap2->setClassname('Baz');
+    $foreigntmap2->setPhpName('Baz');
     $this->databaseMap->addTableObject($foreigntmap2);
     $this->rmap1 = $this->tmap->addRelation('Bar', 'Bar', RelationMap::MANY_TO_ONE);
     $this->rmap2 = $this->tmap->addRelation('Bazz', 'Baz', RelationMap::ONE_TO_MANY);
     $this->tmap->getRelations();
     // now on to the test
-    $this->assertEquals($this->rmap1->getLocalTable(), $this->tmap, 'adding a relation with HAS_ONE sets the local table to the current table');
+    $this->assertEquals($this->rmap1->getLocalTable(), $this->tmap, 'adding a relation with HAS_ONE sets the local table to the current table');    
     $this->assertEquals($this->rmap1->getForeignTable(), $foreigntmap1, 'adding a relation with HAS_ONE sets the foreign table according to the name given');
     $this->assertEquals(RelationMap::MANY_TO_ONE, $this->rmap1->getType(), 'adding a relation with HAS_ONE sets the foreign table type accordingly');
 
-    $this->assertEquals($this->rmap2->getForeignTable(), $this->tmap, 'adding a relation with HAS_MANY sets the foreign table to the current table');
+    $this->assertEquals($this->rmap2->getForeignTable(), $this->tmap, 'adding a relation with HAS_MANY sets the foreign table to the current table');    
     $this->assertEquals($this->rmap2->getLocalTable(), $foreigntmap2, 'adding a relation with HAS_MANY sets the local table according to the name given');
     $this->assertEquals(RelationMap::ONE_TO_MANY, $this->rmap2->getType(), 'adding a relation with HAS_MANY sets the foreign table type accordingly');
     
@@ -245,45 +259,9 @@ class TableMapTest extends PHPUnit_Framework_TestCase
     $this->assertEquals('bar', $tmap->getPrefix(), 'prefix is set by setPrefix()');
     $this->assertTrue($tmap->hasPrefix('barbaz'), 'hasPrefix returns true when prefix is set and found in string');
     $this->assertFalse($tmap->hasPrefix('baz'), 'hasPrefix returns false when prefix is set and not found in string');
-    $this->assertFalse($tmap->hasPrefix('bazbar'), 'hasPrefix returns false when prefix is set and not found anywhere in string');
+    $this->assertFalse($tmap->hasPrefix('bazbar'), 'hasPrefix returns false when prefix is set and not found anywhere in string'); 
     $this->assertEquals('baz', $tmap->removePrefix('barbaz'), 'removePrefix returns string without prefix if found at the beginning');
     $this->assertEquals('bazbaz', $tmap->removePrefix('bazbaz'), 'removePrefix returns original string when prefix is not found');
     $this->assertEquals('bazbar', $tmap->removePrefix('bazbar'), 'removePrefix returns original string when prefix is not found at the beginning');
-  }
-}
-
-class TestableTableMap extends TableMap
-{
-  public function hasPrefix($data)
-  {
-    return parent::hasPrefix($data);
-  }
-
-  public function removePrefix($data)
-  {
-    return parent::removePrefix($data);
-  }
-  
-  public function normalizeColName($name)
-  {
-    return parent::normalizeColName($name);
-  }
-}
-
-class FooTableMap extends TableMap
-{
-  public $rmap;
-  public function buildRelations()
-  {
-    $this->rmap = $this->addRelation('Bar', 'Bar', RelationMap::MANY_TO_ONE);
-  }
-}
-
-class BarTableMap extends TableMap
-{
-  public function initialize()
-  {
-    $this->setName('bar');
-    $this->setClassName('Bar');
   }
 }

@@ -1,17 +1,27 @@
 <?php
-
-/**
- * This file is part of the Propel package.
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
+/*
+ *  $Id: BookstoreTestBase.php 1249 2009-10-19 18:38:54Z francois $
  *
- * @license    MIT License
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * This software consists of voluntary contributions made by many individuals
+ * and is licensed under the LGPL. For more information please see
+ * <http://propel.phpdb.org>.
  */
 
-require_once 'PHPUnit/Framework.php';
-require_once dirname(__FILE__) . '/../../../../runtime/lib/Propel.php';
-set_include_path(get_include_path() . PATH_SEPARATOR . realpath(dirname(__FILE__) . '/../../../fixtures/bookstore/build/classes'));
-Propel::init(dirname(__FILE__) . '/../../../fixtures/bookstore/build/conf/bookstore-conf.php');
+require_once 'PHPUnit/Framework/TestCase.php';
+set_include_path(get_include_path() . PATH_SEPARATOR . "fixtures/bookstore/build/classes");		
+Propel::init('fixtures/bookstore/build/conf/bookstore-conf.php');
 
 /**
  * Base class contains some methods shared by subclass test cases.
@@ -31,18 +41,11 @@ abstract class BookstoreTestBase extends PHPUnit_Framework_TestCase
 	}
 
 	/**
-	 * This is run after each unit test. It empties the database.
+	 * This is run after each unit test.  It empties the database.
 	 */
 	protected function tearDown()
 	{
 		parent::tearDown();
-		// Only commit if the transaction hasn't failed.
-		// This is because tearDown() is also executed on a failed tests, 
-		// and we don't want to call PropelPDO::commit() in that case 
-		// since it will trigger an exception on its own 
-		// ('Cannot commit because a nested transaction was rolled back')
-		if ($this->con->isCommitable()) {
-			$this->con->commit();
-		}
+		$this->con->commit();
 	}
 }
