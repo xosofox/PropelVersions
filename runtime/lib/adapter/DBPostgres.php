@@ -15,7 +15,7 @@
  *
  * @author     Hans Lellelid <hans@xmpl.org> (Propel)
  * @author     Hakan Tandogan <hakan42@gmx.de> (Torque)
- * @version    $Revision: 2090 $
+ * @version    $Revision: 1909 $
  * @package    propel.runtime.adapter
  */
 class DBPostgres extends DBAdapter
@@ -160,14 +160,5 @@ class DBPostgres extends DBAdapter
 			$sql .= 'FROM ' . $tableName;
 		}
 		return $sql;
-	}
-
-	/**
-	 * @see        DBAdapter::quoteIdentifierTable()
-	 */
-	public function quoteIdentifierTable($table)
-	{
-		// e.g. 'database.table alias' should be escaped as '"database"."table" "alias"'
-		return '"' . strtr($table, array('.' => '"."', ' ' => '" "')) . '"';
 	}
 }

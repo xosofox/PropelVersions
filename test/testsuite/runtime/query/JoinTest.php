@@ -8,19 +8,20 @@
  * @license    MIT License
  */
 
-require_once dirname(__FILE__) . '/../../../tools/helpers/BaseTestCase.php';
+require_once 'tools/helpers/BaseTestCase.php';
 require_once dirname(__FILE__) . '/../../../../runtime/lib/query/Criteria.php';
 
-Propel::init(dirname(__FILE__) . '/../../../fixtures/bookstore/build/conf/bookstore-conf.php');
+set_include_path(get_include_path() . PATH_SEPARATOR . "fixtures/bookstore/build/classes");		
+Propel::init('fixtures/bookstore/build/conf/bookstore-conf.php');
 
 /**
  * Test class for Join.
  *
  * @author     François Zaninotto
- * @version    $Id: JoinTest.php 2046 2010-11-19 17:57:46Z francois $
+ * @version    $Id: JoinTest.php 1773 2010-05-25 10:25:06Z francois $
  * @package    runtime.query
  */
-class JoinTest extends BaseTestCase
+class JoinTest extends BaseTestCase 
 {
   /**
    * DB adapter saved for later.
@@ -87,56 +88,11 @@ class JoinTest extends BaseTestCase
     $this->assertEquals(array('bar', 'bal'), $j->getRightColumns());
     $this->assertEquals($expect, $j->getConditions());
   }
-
-  public function testAddExplicitConditionWithoutAlias()
-  {
-    $j = new Join();
-    $j->addExplicitCondition('a', 'foo', null, 'b', 'bar', null);
-    $this->assertEquals('=', $j->getOperator());
-    $this->assertEquals('a.foo', $j->getLeftColumn());
-    $this->assertEquals('b.bar', $j->getRightColumn());
-    $this->assertEquals('a', $j->getLeftTableName());
-    $this->assertEquals('b', $j->getRightTableName());
-    $this->assertNull($j->getLeftTableAlias());
-    $this->assertNull($j->getRightTableAlias());
-    $this->assertEquals(1, $j->countConditions());
-  }
-
-	public function testAddExplicitconditionWithOneAlias()
-	{
-		$j = new Join();
-		$j->setJoinType(Criteria::LEFT_JOIN);
-		$j->addExplicitCondition('book', 'AUTHOR_ID', null, 'author', 'ID', 'a', Join::EQUAL);
-		$params = array();
-		$this->assertEquals($j->getClause($params), 'LEFT JOIN author a ON (book.AUTHOR_ID=a.ID)');
-  }
-  
-  public function testAddExplicitConditionWithAlias()
-  {
-    $j = new Join();
-    $j->addExplicitCondition('a', 'foo', 'Alias', 'b', 'bar', 'Blias');
-    $this->assertEquals('=', $j->getOperator());
-    $this->assertEquals('Alias.foo', $j->getLeftColumn());
-    $this->assertEquals('Blias.bar', $j->getRightColumn());
-    $this->assertEquals('a', $j->getLeftTableName());
-    $this->assertEquals('b', $j->getRightTableName());
-    $this->assertEquals('Alias', $j->getLeftTableAlias());
-    $this->assertEquals('Blias', $j->getRightTableAlias());
-  }
-
-  public function testAddExplicitConditionWithOperator()
-  {
-    $j = new Join();
-    $j->addExplicitCondition('a', 'foo', null, 'b', 'bar', null, '>=');
-    $this->assertEquals('>=', $j->getOperator());
-    $this->assertEquals('a.foo', $j->getLeftColumn());
-    $this->assertEquals('b.bar', $j->getRightColumn());
-  }
   
   public function testEmptyJoinType()
   {
     $j = new Join();
-    $this->assertEquals(Join::INNER_JOIN, $j->getJoinType());
+    $this->assertNull($j->getJoinType());
   }
   
   public function testSetJoinType()
@@ -173,6 +129,7 @@ class JoinTest extends BaseTestCase
     $this->assertEquals(1, $j->countConditions());
     $j->addCondition('foo1', 'bar1');
     $this->assertEquals(2, $j->countConditions());
+
   }
 
 }

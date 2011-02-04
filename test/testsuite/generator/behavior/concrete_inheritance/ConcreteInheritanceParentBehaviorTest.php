@@ -9,13 +9,13 @@
  * @license    MIT License
  */
 
-require_once dirname(__FILE__) . '/../../../../tools/helpers/bookstore/BookstoreTestBase.php';
+require_once 'tools/helpers/bookstore/BookstoreTestBase.php';
 
 /**
  * Tests for ConcreteInheritanceParentBehavior class
  *
  * @author    François Zaniontto
- * @version   $Revision: 1834 $
+ * @version   $Revision: 1612 $
  * @package   generator.behavior.concrete_inheritance
  */
 class ConcreteInheritanceParentBehaviorTest extends BookstoreTestBase

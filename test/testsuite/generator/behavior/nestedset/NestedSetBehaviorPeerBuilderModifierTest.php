@@ -1,7 +1,7 @@
 <?php
 
 /*
- *	$Id: NestedSetBehaviorPeerBuilderModifierTest.php 2168 2011-01-20 15:07:57Z francois $
+ *	$Id: NestedSetBehaviorPeerBuilderModifierTest.php 1612 2010-03-16 22:56:21Z francois $
  * This file is part of the Propel package.
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -9,17 +9,17 @@
  * @license    MIT License
  */
 
-require_once dirname(__FILE__) . '/../../../../tools/helpers/bookstore/behavior/BookstoreNestedSetTestBase.php';
+require_once 'tools/helpers/bookstore/behavior/BookstoreNestedSetTestBase.php';
 
 /**
  * Tests for NestedSetBehaviorPeerBuilderModifier class
  *
  * @author		François Zaninotto
- * @version		$Revision: 2168 $
+ * @version		$Revision: 1612 $
  * @package		generator.behavior.nestedset
  */
 class NestedSetBehaviorPeerBuilderModifierTest extends BookstoreNestedSetTestBase 
-{
+{	
 	public function testConstants()
 	{
 		$this->assertEquals(Table9Peer::LEFT_COL, 'table9.TREE_LEFT', 'nested_set adds a LEFT_COL constant');
@@ -31,7 +31,7 @@ class NestedSetBehaviorPeerBuilderModifierTest extends BookstoreNestedSetTestBas
 	{
 		$this->assertTrue(method_exists('Table9Peer', 'retrieveRoot'), 'nested_set adds a retrieveRoot() method');
 		Table9Peer::doDeleteAll();
-		$this->assertNull(Table9Peer::retrieveRoot(), 'retrieveRoot() returns null as long as no root node is defined');
+		$this->assertNull(Table9Peer::retrieveRoot(), 'retrieveRoot() returns null as long as no root node is defined');		
 		$t1 = new Table9();
 		$t1->setLeftValue(123);
 		$t1->setRightValue(456);
@@ -135,7 +135,7 @@ class NestedSetBehaviorPeerBuilderModifierTest extends BookstoreNestedSetTestBas
 	}
 	
 	public function testShiftRLValuesLeftLimit()
-	{
+	{	
 		$this->initTree();
 		Table9Peer::shiftRLValues($delta = 1, $left = 15);
 		Table9Peer::clearInstancePool();
@@ -178,7 +178,7 @@ class NestedSetBehaviorPeerBuilderModifierTest extends BookstoreNestedSetTestBas
 	}
 		
 	public function testShiftRLValuesRightLimit()
-	{
+	{	
 		$this->initTree();
 		Table9Peer::shiftRLValues($delta = 1, $left = 1, $right = 0);
 		Table9Peer::clearInstancePool();

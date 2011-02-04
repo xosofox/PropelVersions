@@ -8,17 +8,17 @@
  * @license    MIT License
  */
 
-require_once dirname(__FILE__) . '/../../../tools/helpers/bookstore/BookstoreTestBase.php';
+require_once 'tools/helpers/bookstore/BookstoreTestBase.php';
 
 /**
  * Test class for PHP5TableMapBuilder.
  *
  * @author     François Zaninotto
- * @version    $Id: GeneratedRelationMapTest.php 2168 2011-01-20 15:07:57Z francois $
+ * @version    $Id: GeneratedRelationMapTest.php 1612 2010-03-16 22:56:21Z francois $
  * @package    runtime.map
  */
 class GeneratedRelationMapTest extends BookstoreTestBase 
-{
+{ 
   protected $databaseMap;
 
   protected function setUp()

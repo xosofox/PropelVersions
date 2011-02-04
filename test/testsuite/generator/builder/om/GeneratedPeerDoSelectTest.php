@@ -8,7 +8,7 @@
  * @license    MIT License
  */
 
-require_once dirname(__FILE__) . '/../../../../tools/helpers/bookstore/BookstoreEmptyTestBase.php';
+require_once 'tools/helpers/bookstore/BookstoreEmptyTestBase.php';
 
 /**
  * Tests the generated Peer classes.
@@ -102,7 +102,7 @@ class GeneratedPeerDoSelectTest extends BookstoreEmptyTestBase
 
 		$joinBooks = BookPeer::doSelectJoinAuthor($c);
 		$obj2 = $joinBooks[0];
-		$obj2Array = $obj2->toArray(BasePeer::TYPE_PHPNAME, true, array(), true);
+		$obj2Array = $obj2->toArray(BasePeer::TYPE_PHPNAME, true, true);
 		// $joinSize = strlen(serialize($obj2));
 
 		$this->assertEquals(count($books), count($joinBooks), "Expected to find same number of rows in doSelectJoin*() call as doSelect() call.");
@@ -140,7 +140,7 @@ class GeneratedPeerDoSelectTest extends BookstoreEmptyTestBase
 		$this->assertEquals(2, count($matches), "Expected 2 matches back from new books; got back " . count($matches));
 
 		$this->assertNull($matches[0]->getAuthor(), "Expected first book author to be null");
-		$this->assertInstanceOf('Author', $matches[1]->getAuthor(), "Expected valid Author object for second book.");
+		$this->assertType('Author', $matches[1]->getAuthor(), "Expected valid Author object for second book.");
 	}
 
 	public function testDoSelectJoinOneToOne()

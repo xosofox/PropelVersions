@@ -8,13 +8,13 @@
  * @license    MIT License
  */
 
-require_once dirname(__FILE__) . '/../../../tools/helpers/bookstore/BookstoreEmptyTestBase.php';
+require_once 'tools/helpers/bookstore/BookstoreEmptyTestBase.php';
 
 /**
  * Test class for PropelStatementFormatter.
  *
  * @author     Francois Zaninotto
- * @version    $Id: PropelStatementFormatterTest.php 1833 2010-07-19 21:52:20Z francois $
+ * @version    $Id: PropelStatementFormatterTest.php 1733 2010-05-04 14:25:27Z francois $
  * @package    runtime.formatter
  */
 class PropelStatementFormatterTest extends BookstoreEmptyTestBase

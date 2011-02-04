@@ -8,28 +8,48 @@
  * @license    MIT License
  */
 
-require_once 'PHPUnit/Framework.php';
-require_once dirname(__FILE__) . '/../../../../generator/lib/builder/util/XmlToAppData.php';
+require_once 'PHPUnit/Framework/TestCase.php';
 
 /**
- * Base class for all Platform tests
+ * 
  * @package    generator.platform
  */
-abstract class PlatformTestBase extends PHPUnit_Framework_TestCase
+class PlatformTestBase extends PHPUnit_Framework_TestCase
 {
+	/**
+	 * Platform object.
+	 *
+	 * @var        Platform
+	 */
+	protected $platform;
 
-	abstract protected function getPlatform();
+	/**
+	 *
+	 */
+	protected function setUp()
+	{
+		parent::setUp();
 
-	protected function getDatabaseFromSchema($schema)
-	{
-		$xtad = new XmlToAppData($this->getPlatform());
-		$appData = $xtad->parseString($schema);
-		return $appData->getDatabase();
+		$clazz = preg_replace('/Test$/', '', get_class($this));
+		include_once 'platform/' . $clazz . '.php';
+		$this->platform = new $clazz();
 	}
-	
-	protected function getTableFromSchema($schema, $tableName = 'foo')
+
+	/**
+	 *
+	 */
+	protected function tearDown()
 	{
-		return $this->getDatabaseFromSchema($schema)->getTable($tableName);
+		parent::tearDown();
 	}
-	
+
+	/**
+	 *
+	 * @return     Platform
+	 */
+	protected function getPlatform()
+	{
+		return $this->platform;
+	}
+
 }
