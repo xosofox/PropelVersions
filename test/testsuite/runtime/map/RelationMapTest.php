@@ -8,19 +8,21 @@
  * @license    MIT License
  */
 
-require_once 'PHPUnit/Framework/TestCase.php';
+require_once 'PHPUnit/Framework.php';
+require_once dirname(__FILE__) . '/../../../../runtime/lib/map/DatabaseMap.php';
 require_once dirname(__FILE__) . '/../../../../runtime/lib/map/RelationMap.php';
+require_once dirname(__FILE__) . '/../../../../runtime/lib/map/ColumnMap.php';
 require_once dirname(__FILE__) . '/../../../../runtime/lib/map/TableMap.php';
 
 /**
  * Test class for RelationMap.
  *
  * @author     François Zaninotto
- * @version    $Id: RelationMapTest.php 1773 2010-05-25 10:25:06Z francois $
+ * @version    $Id: RelationMapTest.php 2168 2011-01-20 15:07:57Z francois $
  * @package    runtime.map
  */
 class RelationMapTest extends PHPUnit_Framework_TestCase 
-{ 
+{
   protected $databaseMap, $relationName, $rmap;
 
   protected function setUp()

@@ -8,13 +8,13 @@
  * @license    MIT License
  */
 
-require_once 'PHPUnit/Framework/TestCase.php';
-require_once 'builder/util/PropelTemplate.php';
+require_once 'PHPUnit/Framework.php';
+require_once dirname(__FILE__) . '/../../../../../generator/lib/builder/util/PropelTemplate.php';
 
 /**
  * Tests for PropelTemplate class
  *
- * @version    $Revision: 1784 $
+ * @version    $Revision: 1834 $
  * @package    generator.builder.util
  */
 class PropelTemplateTest extends PHPUnit_Framework_TestCase

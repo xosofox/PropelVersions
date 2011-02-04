@@ -8,22 +8,17 @@
  * @license    MIT License
  */
 
-require_once 'tools/helpers/BaseTestCase.php';
-require_once dirname(__FILE__) . '/../../../../runtime/lib/query/Criteria.php';
-require_once dirname(__FILE__) . '/../../../../runtime/lib/util/BasePeer.php';
-
-set_include_path(get_include_path() . PATH_SEPARATOR . "fixtures/bookstore/build/classes");		
-Propel::init('fixtures/bookstore/build/conf/bookstore-conf.php');
+require_once dirname(__FILE__) . '/../../../tools/helpers/bookstore/BookstoreTestBase.php';
 
 /**
  * Test class for Criteria.
  *
  * @author     <a href="mailto:celkins@scardini.com">Christopher Elkins</a>
  * @author     <a href="mailto:sam@neurogrid.com">Sam Joseph</a>
- * @version    $Id: CriteriaTest.php 1773 2010-05-25 10:25:06Z francois $
+ * @version    $Id: CriteriaTest.php 2168 2011-01-20 15:07:57Z francois $
  * @package    runtime.query
  */
-class CriteriaTest extends BaseTestCase
+class CriteriaTest extends BookstoreTestBase
 {
 
   /**
@@ -59,6 +54,25 @@ class CriteriaTest extends BaseTestCase
   public function testAddString()
   {
     $table = "myTable";
+    $column = "myColumn";
+    $value = "myValue";
+
+    // Add the string
+    $this->c->add($table . '.' . $column, $value);
+
+    // Verify that the key exists
+    $this->assertTrue($this->c->containsKey($table . '.' . $column));
+
+    // Verify that what we get out is what we put in
+    $this->assertTrue($this->c->getValue($table . '.' . $column) === $value);
+  }
+  
+  /**
+   * Test basic adding of strings for table with explicit schema.
+   */
+  public function testAddStringWithSchemas()
+  {
+    $table = "mySchema.myTable";
     $column = "myColumn";
     $value = "myValue";
 
@@ -464,7 +478,7 @@ class CriteriaTest extends BaseTestCase
   public function testJoinObject ()
   {
     $j = new Join('TABLE_A.COL_1', 'TABLE_B.COL_2');
-    $this->assertEquals(null, $j->getJoinType());
+    $this->assertEquals('INNER JOIN', $j->getJoinType());
     $this->assertEquals('TABLE_A.COL_1', $j->getLeftColumn());
     $this->assertEquals('TABLE_A', $j->getLeftTableName());
     $this->assertEquals('COL_1', $j->getLeftColumnName());
@@ -500,7 +514,7 @@ class CriteriaTest extends BaseTestCase
     $c->addSelectColumn("*");
     $c->addJoin('TABLE_A.COL_1', 'TABLE_B.COL_1'); // straight join
 
-    $expect = "SELECT * FROM TABLE_A, TABLE_B WHERE TABLE_A.COL_1=TABLE_B.COL_1";
+    $expect = "SELECT * FROM TABLE_A INNER JOIN TABLE_B ON (TABLE_A.COL_1=TABLE_B.COL_1)";
     try {
       $params = array();
       $result = BasePeer::createSelectSql($c, $params);
@@ -518,8 +532,8 @@ class CriteriaTest extends BaseTestCase
     $c->addJoin('TABLE_A.COL_1', 'TABLE_B.COL_1');
     $c->addJoin('TABLE_B.COL_X', 'TABLE_D.COL_X');
 
-    $expect = 'SELECT * FROM TABLE_A, TABLE_B, TABLE_D '
-         .'WHERE TABLE_A.COL_1=TABLE_B.COL_1 AND TABLE_B.COL_X=TABLE_D.COL_X';
+    $expect = 'SELECT * FROM TABLE_A INNER JOIN TABLE_B ON (TABLE_A.COL_1=TABLE_B.COL_1)'
+         . ' INNER JOIN TABLE_D ON (TABLE_B.COL_X=TABLE_D.COL_X)';
     try {
       $params = array();
       $result = BasePeer::createSelectSql($c, $params);
@@ -645,7 +659,8 @@ class CriteriaTest extends BaseTestCase
   }
 
   /**
-   * @link       http://propel.phpdb.org/trac/ticket/451
+   * @link       http://www.propelorm.org/ticket/451
+   * @link       http://www.propelorm.org/ticket/283#comment:8
    */
   public function testSeveralMixedJoinOrders()
   {
@@ -655,21 +670,12 @@ class CriteriaTest extends BaseTestCase
       addJoin("TABLE_A.BAR_ID", "TABLE_C.ID")->
       addSelectColumn("TABLE_A.ID");
 
-    # These are no longer different, see http://propel.phpdb.org/trac/ticket/283#comment:8
-    #$db = Propel::getDB();
-    #
-    #if ($db instanceof DBMySQL) {
-    #  $expect = 'SELECT TABLE_A.ID FROM (TABLE_A CROSS JOIN TABLE_C)'
-    #      .' LEFT JOIN TABLE_B ON (TABLE_A.FOO_ID=TABLE_B.ID) WHERE TABLE_A.BAR_ID=TABLE_C.ID';
-    #} else {
-      $expect = 'SELECT TABLE_A.ID FROM TABLE_A CROSS JOIN TABLE_C'
-          .' LEFT JOIN TABLE_B ON (TABLE_A.FOO_ID=TABLE_B.ID) WHERE TABLE_A.BAR_ID=TABLE_C.ID';
-    #}
+    $expect = 'SELECT TABLE_A.ID FROM TABLE_A LEFT JOIN TABLE_B ON (TABLE_A.FOO_ID=TABLE_B.ID) INNER JOIN TABLE_C ON (TABLE_A.BAR_ID=TABLE_C.ID)';
     $params = array();
     $result = BasePeer::createSelectSql($c, $params);
     $this->assertEquals($expect, $result);
   }
-  
+
   /**
    * @link       http://propel.phpdb.org/trac/ticket/606
    */
@@ -679,9 +685,8 @@ class CriteriaTest extends BaseTestCase
     $c->clearSelectColumns()->
       addJoin(array('TABLE_A.FOO_ID'), array('TABLE_B.ID'), Criteria::LEFT_JOIN)->
       addSelectColumn("TABLE_A.ID");
-        
-    $expect = 'SELECT TABLE_A.ID FROM TABLE_A'
-              .' LEFT JOIN TABLE_B ON (TABLE_A.FOO_ID=TABLE_B.ID)';
+
+    $expect = 'SELECT TABLE_A.ID FROM TABLE_A LEFT JOIN TABLE_B ON TABLE_A.FOO_ID=TABLE_B.ID';
     $params = array();
     $result = BasePeer::createSelectSql($c, $params);
     $this->assertEquals($expect, $result);
@@ -699,9 +704,8 @@ class CriteriaTest extends BaseTestCase
         array('TABLE_B.ID', 'TABLE_B.BAZ'), 
         Criteria::LEFT_JOIN)->
       addSelectColumn("TABLE_A.ID");
-        
-    $expect = 'SELECT TABLE_A.ID FROM TABLE_A'
-              .' LEFT JOIN TABLE_B ON (TABLE_A.FOO_ID=TABLE_B.ID AND TABLE_A.BAR=TABLE_B.BAZ)';
+
+    $expect = 'SELECT TABLE_A.ID FROM TABLE_A LEFT JOIN TABLE_B ON (TABLE_A.FOO_ID=TABLE_B.ID AND TABLE_A.BAR=TABLE_B.BAZ)';
     $params = array();
     $result = BasePeer::createSelectSql($c, $params);
     $this->assertEquals($expect, $result);
@@ -722,8 +726,8 @@ class CriteriaTest extends BaseTestCase
           array('TABLE_A.BAR', 'TABLE_B.BAZ')))->
       addSelectColumn("TABLE_A.ID");
         
-    $expect = 'SELECT TABLE_A.ID FROM TABLE_A, TABLE_B '
-            . 'WHERE TABLE_A.FOO_ID=TABLE_B.ID AND TABLE_A.BAR=TABLE_B.BAZ';
+    $expect = 'SELECT TABLE_A.ID FROM TABLE_A INNER JOIN TABLE_B '
+            . 'ON (TABLE_A.FOO_ID=TABLE_B.ID AND TABLE_A.BAR=TABLE_B.BAZ)';
     $params = array();
     $result = BasePeer::createSelectSql($c, $params);
     $this->assertEquals($expect, $result);
@@ -744,8 +748,8 @@ class CriteriaTest extends BaseTestCase
           array('TABLE_A.BAR', 3)))->
       addSelectColumn("TABLE_A.ID");
         
-    $expect = 'SELECT TABLE_A.ID FROM TABLE_A, TABLE_B '
-            . 'WHERE TABLE_A.FOO_ID=TABLE_B.ID AND TABLE_A.BAR=3';
+    $expect = 'SELECT TABLE_A.ID FROM TABLE_A INNER JOIN TABLE_B '
+            . 'ON (TABLE_A.FOO_ID=TABLE_B.ID AND TABLE_A.BAR=3)';
     $params = array();
     $result = BasePeer::createSelectSql($c, $params);
     $this->assertEquals($expect, $result);
@@ -789,8 +793,8 @@ class CriteriaTest extends BaseTestCase
           array('TABLE_A.BAR', 'TABLE_B.BAZ', Criteria::LESS_THAN)))->
       addSelectColumn("TABLE_A.ID");
         
-    $expect = 'SELECT TABLE_A.ID FROM TABLE_A, TABLE_B '
-            . 'WHERE TABLE_A.FOO_ID>=TABLE_B.ID AND TABLE_A.BAR<TABLE_B.BAZ';
+    $expect = 'SELECT TABLE_A.ID FROM TABLE_A INNER JOIN TABLE_B '
+            . 'ON (TABLE_A.FOO_ID>=TABLE_B.ID AND TABLE_A.BAR<TABLE_B.BAZ)';
     $params = array();
     $result = BasePeer::createSelectSql($c, $params);
     $this->assertEquals($expect, $result);
@@ -881,7 +885,7 @@ class CriteriaTest extends BaseTestCase
    */
   public function testAliasInCriterion()
   {
-    $c = new Criteria(); 
+    $c = new Criteria();
     $c->addAsColumn("column_alias", "tbl.COL1");
     $crit = $c->getNewCriterion("column_alias", "FOO");
     $this->assertNull($crit->getTable());

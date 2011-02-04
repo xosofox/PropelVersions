@@ -1,7 +1,7 @@
 <?php
 
 /*
- *	$Id: SoftDeleteBehaviorTest.php 1806 2010-06-17 10:37:11Z francois $
+ *	$Id: SoftDeleteBehaviorTest.php 2168 2011-01-20 15:07:57Z francois $
  * This file is part of the Propel package.
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -9,12 +9,13 @@
  * @license    MIT License
  */
 
-require_once 'tools/helpers/bookstore/BookstoreTestBase.php';
+require_once dirname(__FILE__) . '/../../../tools/helpers/bookstore/BookstoreTestBase.php';
+
 /**
  * Tests for SoftDeleteBehavior class
  *
  * @author		 François Zaninotto
- * @version		$Revision: 1806 $
+ * @version		$Revision: 2168 $
  * @package		generator.behavior
  */
 class SoftDeleteBehaviorTest extends BookstoreTestBase 
@@ -44,7 +45,7 @@ class SoftDeleteBehaviorTest extends BookstoreTestBase
 		Table4Peer::disableSoftDelete();
 		$this->assertFalse(Table4Peer::isSoftDeleteEnabled(), 'disableSoftDelete() disables the static soft delete');
 		Table4Peer::enableSoftDelete();
-		$this->assertTrue(Table4Peer::isSoftDeleteEnabled(), 'enableSoftDelete() enables the static soft delete');		
+		$this->assertTrue(Table4Peer::isSoftDeleteEnabled(), 'enableSoftDelete() enables the static soft delete');
 	}
 	
 	public function testInstancePoolingAndSoftDelete()
@@ -345,7 +346,7 @@ class SoftDeleteBehaviorTest extends BookstoreTestBase
 		$this->assertNotNull($t->getDeletedOn(), 'deleted_column is not null after a soft delete');
 		$this->assertEquals(0, Table5Peer::doCount(new Criteria), 'soft deleted rows are hidden for select queries');
 		Table5Peer::disableSoftDelete();
-		$this->assertEquals(1, Table5Peer::doCount(new Criteria), 'soft deleted rows are still present in the database');		
+		$this->assertEquals(1, Table5Peer::doCount(new Criteria), 'soft deleted rows are still present in the database');
 	}
 }
 

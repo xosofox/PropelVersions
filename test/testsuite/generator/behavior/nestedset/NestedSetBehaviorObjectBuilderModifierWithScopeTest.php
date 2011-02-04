@@ -1,7 +1,7 @@
 <?php
 
 /*
- *	$Id: NestedSetBehaviorObjectBuilderModifierWithScopeTest.php 2138 2011-01-12 07:48:15Z francois $
+ *	$Id: NestedSetBehaviorObjectBuilderModifierWithScopeTest.php 2168 2011-01-20 15:07:57Z francois $
  * This file is part of the Propel package.
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -9,17 +9,17 @@
  * @license    MIT License
  */
 
-require_once 'tools/helpers/bookstore/behavior/BookstoreNestedSetTestBase.php';
+require_once dirname(__FILE__) . '/../../../../tools/helpers/bookstore/behavior/BookstoreNestedSetTestBase.php';
 
 /**
  * Tests for NestedSetBehaviorObjectBuilderModifier class
  *
  * @author		François Zaninotto
- * @version		$Revision: 2138 $
+ * @version		$Revision: 2168 $
  * @package		generator.behavior.nestedset
  */
 class NestedSetBehaviorObjectBuilderModifierWithScopeTest extends BookstoreNestedSetTestBase 
-{	
+{
 	protected function getByTitle($title)
 	{
 		$c = new Criteria();
