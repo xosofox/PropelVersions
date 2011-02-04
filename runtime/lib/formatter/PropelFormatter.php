@@ -12,7 +12,7 @@
  * Abstract class for query formatter
  *
  * @author     Francois Zaninotto
- * @version    $Revision: 1923 $
+ * @version    $Revision: 2044 $
  * @package    propel.runtime.formatter
  */
 abstract class PropelFormatter
@@ -87,10 +87,7 @@ abstract class PropelFormatter
 	
 	public function setWith($withs = array())
 	{
-		$this->with = array();
-		foreach ($withs as $relation => $join) {
-			$this->with[$relation] = new ModelWith($join);
-		}
+		$this->with = $withs;
 	}
 	
 	public function getWith()

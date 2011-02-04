@@ -8,17 +8,17 @@
  * @license    MIT License
  */
 
-require_once 'tools/helpers/bookstore/BookstoreTestBase.php';
+require_once dirname(__FILE__) . '/../../../../tools/helpers/bookstore/BookstoreTestBase.php';
 
 /**
  * Test class for PHP5TableMapBuilder.
  *
  * @author     François Zaninotto
- * @version    $Id: PHP5TableMapBuilderTest.php 1898 2010-08-11 14:40:23Z francois $
+ * @version    $Id: PHP5TableMapBuilderTest.php 2168 2011-01-20 15:07:57Z francois $
  * @package    generator.builder.om
  */
 class PHP5TableMapBuilderTest extends BookstoreTestBase 
-{ 
+{
   protected $databaseMap;
 
   protected function setUp()
@@ -35,7 +35,7 @@ class PHP5TableMapBuilderTest extends BookstoreTestBase
     $this->assertTrue($table->getColumn('enabled')->getDefaultValue(), 'boolean default values are correctly mapped');
     $this->assertFalse($table->getColumn('not_enabled')->getDefaultValue(), 'boolean default values are correctly mapped');
     $this->assertEquals('CURRENT_TIMESTAMP', $table->getColumn('created')->getDefaultValue(), 'expression default values are correctly mapped');
-    $this->assertNull($table->getColumn('role_id')->getDefaultValue(), 'explicit null default values are correctly mapped');    
+    $this->assertNull($table->getColumn('role_id')->getDefaultValue(), 'explicit null default values are correctly mapped');
   }
 
   public function testRelationCount()

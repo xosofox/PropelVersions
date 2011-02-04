@@ -8,8 +8,8 @@
  * @license    MIT License
  */
 
-require_once 'tools/helpers/bookstore/BookstoreTestBase.php';
-require_once 'tools/helpers/bookstore/BookstoreDataPopulator.php';
+require_once dirname(__FILE__) . '/../../../../tools/helpers/bookstore/BookstoreTestBase.php';
+require_once dirname(__FILE__) . '/../../../../tools/helpers/bookstore/BookstoreDataPopulator.php';
 
 /**
  * Test class for QueryBuilder.
@@ -19,7 +19,7 @@ require_once 'tools/helpers/bookstore/BookstoreDataPopulator.php';
  * @package    generator.builder.om
  */
 class QueryBuilderTest extends BookstoreTestBase 
-{ 
+{
   
 	public function testExtends()
 	{
@@ -515,7 +515,7 @@ class QueryBuilderTest extends BookstoreTestBase
 		$this->assertTrue(method_exists('BookQuery', 'filterByPublisher'), 'QueryBuilder adds filterByFk() methods for all fkeys');
 		
 		$this->assertTrue(method_exists('EssayQuery', 'filterByAuthorRelatedByFirstAuthor'), 'QueryBuilder adds filterByFk() methods for several fkeys on the same table');
-		$this->assertTrue(method_exists('EssayQuery', 'filterByAuthorRelatedBySecondAuthor'), 'QueryBuilder adds filterByFk() methods for several fkeys on the same table');		
+		$this->assertTrue(method_exists('EssayQuery', 'filterByAuthorRelatedBySecondAuthor'), 'QueryBuilder adds filterByFk() methods for several fkeys on the same table');
 	}
 	
 	public function testFilterByFkSimpleKey()
@@ -561,13 +561,36 @@ class QueryBuilderTest extends BookstoreTestBase
 		$this->assertEquals($testFavorite, $favorite, 'Generated query handles filterByFk() methods correctly for composite fkeys');
 	}
 	
+	public function testFilterByFkObjectCollection()
+	{
+		BookstoreDataPopulator::depopulate($this->con);
+		BookstoreDataPopulator::populate($this->con);
+		
+		$authors = AuthorQuery::create()
+			->orderByFirstName()
+			->limit(2)
+			->find($this->con);
+		
+		$books = BookQuery::create()
+			->filterByAuthor($authors)
+			->find($this->con);
+		$q1 = $this->con->getLastExecutedQuery();
+		
+		$books = BookQuery::create()
+			->add(BookPeer::AUTHOR_ID, $authors->getPrimaryKeys(), Criteria::IN)
+			->find($this->con);
+		$q2 = $this->con->getLastExecutedQuery();
+		
+		$this->assertEquals($q2, $q1, 'filterByFk() accepts a collection and results to an IN query');
+	}
+	
 		public function testFilterByRefFk()
 	{
 		$this->assertTrue(method_exists('BookQuery', 'filterByReview'), 'QueryBuilder adds filterByRefFk() methods');
 		$this->assertTrue(method_exists('BookQuery', 'filterByMedia'), 'QueryBuilder adds filterByRefFk() methods for all fkeys');
 		
 		$this->assertTrue(method_exists('AuthorQuery', 'filterByEssayRelatedByFirstAuthor'), 'QueryBuilder adds filterByRefFk() methods for several fkeys on the same table');
-		$this->assertTrue(method_exists('AuthorQuery', 'filterByEssayRelatedBySecondAuthor'), 'QueryBuilder adds filterByRefFk() methods for several fkeys on the same table');				
+		$this->assertTrue(method_exists('AuthorQuery', 'filterByEssayRelatedBySecondAuthor'), 'QueryBuilder adds filterByRefFk() methods for several fkeys on the same table');
 	}
 
 	public function testFilterByRefFkSimpleKey()
@@ -612,7 +635,31 @@ class QueryBuilderTest extends BookstoreTestBase
 			->findOne();
 		$this->assertEquals($testOpinion, $opinion, 'Generated query handles filterByRefFk() methods correctly for composite fkeys');
 	}
-	
+
+	public function testFilterByRefFkObjectCollection()
+	{
+		BookstoreDataPopulator::depopulate($this->con);
+		BookstoreDataPopulator::populate($this->con);
+		
+		$books = BookQuery::create()
+			->orderByTitle()
+			->limit(2)
+			->find($this->con);
+		
+		$authors = AuthorQuery::create()
+			->filterByBook($books)
+			->find($this->con);
+		$q1 = $this->con->getLastExecutedQuery();
+		
+		$authors = AuthorQuery::create()
+			->addJoin(AuthorPeer::ID, BookPeer::AUTHOR_ID, Criteria::LEFT_JOIN)
+			->add(BookPeer::ID, $books->getPrimaryKeys(), Criteria::IN)
+			->find($this->con);
+		$q2 = $this->con->getLastExecutedQuery();
+		
+		$this->assertEquals($q2, $q1, 'filterByRefFk() accepts a collection and results to an IN query in the joined table');
+	}
+		
 	public function testFilterByCrossFK()
 	{
 		$this->assertTrue(method_exists('BookQuery', 'filterByBookClubList'), 'Generated query handles filterByCrossRefFK() for many-to-many relationships');
@@ -656,7 +703,7 @@ class QueryBuilderTest extends BookstoreTestBase
 			->joinAuthorRelatedBySecondAuthor();
 		$q1 = EssayQuery::create()
 			->join('Essay.AuthorRelatedBySecondAuthor', "INNER JOIN");
-		$this->assertTrue($q->equals($q1), 'joinFk() translates to a "INNER JOIN" when this is defined as defaultJoin in the schema');		
+		$this->assertTrue($q->equals($q1), 'joinFk() translates to a "INNER JOIN" when this is defined as defaultJoin in the schema');
 	}
 	
 	public function testJoinFkAlias()
@@ -706,7 +753,7 @@ class QueryBuilderTest extends BookstoreTestBase
 			->joinEssayRelatedBySecondAuthor();
 		$q1 = AuthorQuery::create()
 			->join('Author.EssayRelatedBySecondAuthor', Criteria::INNER_JOIN);
-		$this->assertTrue($q->equals($q1), 'joinRefFk() translates to a "INNER JOIN" when this is defined as defaultJoin in the schema');		
+		$this->assertTrue($q->equals($q1), 'joinRefFk() translates to a "INNER JOIN" when this is defined as defaultJoin in the schema');
 	}
 	
 	public function testUseFkQuerySimple()
@@ -883,7 +930,7 @@ class QueryBuilderTest extends BookstoreTestBase
 	}
 	
 	public function testPruneSimpleKey()
-	{	
+	{
 		BookstoreDataPopulator::depopulate();
 		BookstoreDataPopulator::populate();
 		

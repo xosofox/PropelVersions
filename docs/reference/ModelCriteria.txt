@@ -89,6 +89,19 @@ $query = 'SELECT book.* from `book`
 WHERE book.TITLE LIKE :p1'; // :p1 => 'War%'
 }}}
 
+ * For numeric and temporal columns, `filterByXXX()` translates into an interval condition if the value is an associative array using 'min' and/or 'max' as keys:
+ 
+{{{
+#!php
+<?php
+$books = BookQuery::create()
+  ->filterById(array('min' => 123, 'max' => 456))
+  ->find();
+// example Query generated for a MySQL database
+$query = 'SELECT book.* from `book`
+WHERE book.ID >= :p1 AND book.ID <= :p2)'; // :p1 => 123, :p2 => 456
+}}}
+
  * For integer columns, `filterByXXX()` translates into a SQL `WHERE ... IN` if the value is an array:
  
 {{{
@@ -108,14 +121,89 @@ WHERE book.AUTHOR_ID IN (:p1, :p2)'; // :p1 => 123, :p2 => 456
 #!php
 <?php
 $books = BookQuery::create()
-  ->filterByIsPublished('yes')
-  ->filterByIsSoldOut('no')
+  ->filterByIsPublished('yes') // 'yes', 'on', 'true', true, and 1 all translate to boolean true
+  ->filterByIsSoldOut('no')    // 'no', 'off', 'false', false, and 0 all translate to boolean false
   ->find();
 // example Query generated for a MySQL database
 $query = 'SELECT book.* from `book`
 WHERE book.IS_PUBLISHED = :p1
   AND book.IS_SOLD_OUT = :p2'; // :p1 => true, :p2 => false
 }}}
+
+ * for Temporal columns, `filterByXXX()` accepts a timestamp or a DateTime value:
+ 
+{{{
+#!php
+<?php
+$books = BookQuery::create()
+  ->filterByPublishedAt(array('max' => time())
+  ->find();
+// example Query generated for a MySQL database
+$query = 'SELECT book.* from `book`
+WHERE book.PUBLISHED_AT < :p1; // :p1 => 1291065396
+}}}
+
+ * for ENUM columns, `filterByXXX()` accepts one of the values defined in the `valueSet` attribute in the schema.
+
+{{{
+#!php
+<?php
+// Example for the book table:
+// <column name="style" type="ENUM" valueSet="novel, essay, poetry" />
+$books = BookQuery::create()
+  ->filterByStyle('novel')
+  ->find();
+// example Query generated for a MySQL database
+$query = 'SELECT book.* from `book`
+WHERE book.STYLE = :p1; // :p1 => 0
+}}}
+ 
+ * for Object columns, `filterByXXX()` accepts a PHP object
+
+{{{
+#!php
+<?php
+$houses = HouseQuery::create()
+  ->filterByCoordinates(new GeographicCoordinates(48.8527, 2.3510))
+  ->find();
+// example Query generated for a MySQL database
+$query = 'SELECT house.* from `house`
+WHERE house.COORDINATES = :p1'; // :p1 => 'O:21:"GeographicCoordinates":2:{s:8:"latitude";d:48.8527;s:9:"longitude";d:2.3510;}'
+}}}
+
+ * for Array columns, Propel stores a serialized version of the array that makes it searchable. Therefore, `filterByXXX()` accepts a PHP array. Use any of `Criteria::CONTAINS_ALL`, `Criteria::CONTAINS_SOME`, or `Criteria::CONTAINS_NONE` as second argument to the filter method.
+
+{{{
+#!php
+<?php
+$books = BookQuery::create()
+  ->filterByTags(array('novel', 'russian'), Criteria::CONTAINS_ALL)
+  ->find();
+// example Query generated for a MySQL database
+$query = 'SELECT book.* from `book`
+WHERE book.TAGS LIKE :p1
+AND   book.TAGS LIKE :p2'; // :p1 => '%| novel |%', :p2 => '%| russian |%'
+
+$books = BookQuery::create()
+  ->filterByTags(array('novel', 'russian'), Criteria::CONTAINS_NONE)
+  ->find();
+// example Query generated for a MySQL database
+$query = 'SELECT book.* from `book`
+WHERE book.TAGS NOT LIKE :p1
+AND   book.TAGS NOT LIKE :p2
+OR    book.TAGS IS NULL'; // :p1 => '%| novel |%', :p2 => '%| russian |%'
+
+// If the column name is plural, Propel also generates singular filter methods
+// expecting a scalar parameter instead of an array
+$books = BookQuery::create()
+  ->filterByTag('russian')
+  ->find();
+// example Query generated for a MySQL database
+$query = 'SELECT book.* from `book`
+WHERE book.TAGS LIKE :p1'; // :p1 => '%| russian |%'
+}}}
+
+'''Tip''': Filters on array columns translate to SQL as LIKE conditions. That means that the resulting query often requires an expensive table scan, and is not suited for large tables.
 
 === Relation Filter Methods ===
 
@@ -268,7 +356,7 @@ $nbBooks = BookQuery::create()
   ->findOne($con);
 }}}
 
-'''Tip''': In debug mode, the connection object provides a way to check the latest executed query, by calling `$con->getLastExecutedQuery()`. See the [wiki:Documentation/1.5/07-Logging Logging documentation] for more details.
+'''Tip''': In debug mode, the connection object provides a way to check the latest executed query, by calling `$con->getLastExecutedQuery()`. See the [wiki:Documentation/1.6/07-Logging Logging documentation] for more details.
 
 === Counting Objects ===
 
@@ -412,21 +500,22 @@ $bookTag = BookTagQuery::create()
 
 === Reusing A Query ===
 
-By default, termination methods like `findOne()`, `find()`, `count()`, `paginate()`, or `delete()` alter the original query. That means that if you need to reuse a query after a termination method, you must call the `keepQuery()` method first:
+By default, termination methods like `findOne()`, `find()`, `count()`, `paginate()`, or `delete()` clone the original query. That means that you can reuse a query after a termination method:
 
 {{{
 #!php
 <?php
 $q = BookQuery::create()->filterByIsPublished(true);
 $book = $q->findOneByTitle('War And Peace');
-// findOneByXXX() adds a limit() to the query
-// so further reuses of the query may show side effects
-echo $q->count(); // 1
-
-// to allos query reuse, call keepQuery() before the termination method
-$q = BookQuery::create()->filterByIsPublished(true)->keepQuery();
-$book = $q->findOneByTitle('War And Peace');
+// findOneByXXX() adds a limit(1) to the query
+// but further reuses of the query are not affected
 echo $q->count(); // 34
+
+// You can disable query reuse by calling keepQuery(false) before the termination method
+// This will bring a small boost in performance
+$q = BookQuery::create()->filterByIsPublished(true)->keepQuery(false);
+$book = $q->findOneByTitle('War And Peace');
+echo $q->count(); // 1
 }}}
 
 == Relational API ==
@@ -602,6 +691,16 @@ $book = BookQuery::create()
 // Otherwise, the default join type is a LEFT JOIN
 // You can override the default join type for a given relationship
 // By setting the joinType attribute of the foreign key element in the schema.xml
+
+// Add more conditions to an existing join 
+// by calling addJoinCondition($joinName, $clause, $value)
+$book = BookQuery::create()
+  ->joinAuthor()
+  ->addJoinCondition('Author', 'Author.LastName <> ?', 'Austen')
+  ->findOne();
+  // SELECT book.* FROM book 
+  // INNER JOIN author ON (book.AUTHOR_ID = author.ID AND author.LAST_NAME <> 'Austen')
+  // LIMIT 1;
 }}}
 
 === Table Aliases ===
@@ -881,7 +980,7 @@ delete($con = null)
 update($values, $con = null, $forceIndividualSaves = false)
 }}}
 
-== Collections and Formatters ==
+== Collections, Pager, and Formatters ==
 
 === PropelCollection Methods ===
 
@@ -962,10 +1061,56 @@ coll  populateRelation($name) // makes an additional query to populate the objec
 // Import/Export methods
 array toArray() // exports all the objects as array
 array toKeyValue($keyColumn, $valueColumn) // exports all the objects as a hash
+string toXML() // exports all the objects as an XML string
+string toYAML() // exports all the objects as a YAML string
+string toJSON() // exports all the objects as a JSON string
+string toCSV() // exports all the objects as a CSV string
+string __toString() // exports to a string using the default string representation (YAML)
 void  fromArray($array) // imports a collection from an array
+void toXML($xml) // imports a collection from an XML string
+void toYAML($yaml) // imports a collection from a YAML string
+void toJSON($json) // imports a collection from a JSON string
+void toCSV($csv) // imports a collection from a CSV string
 }}}
 
 '''Tip''': `PropelCollection` extends `ArrayObject`, so you can also call all the methods of this SPL class on a collection (including `count()`, `append()`, `ksort()`, etc.).
+
+=== Paginating Results ===
+
+{{{
+#!php
+<?php
+// use paginate() instead of find() as termination method to paginate results
+$bookPager = BookQuery::create()
+  ->paginate($page = 1, $maxPerPage = 10, $con);
+// paginate() returns a PropelModelPager object, which behaves just like a collection
+?>
+
+<?php if($bookPager->isEmpty()): ?>
+There are no books.
+<?php else: ?>
+There are <?php echo $bookPager->count() ?> books:
+<ul>
+  <?php foreach ($bookPager as $book): ?>
+  <li class="<?php echo $bookPager->isOdd() ? 'odd' : 'even' ?>">
+    <?php echo $book->getTitle() ?>
+  </li>
+  <?php if($bookPager->isLast()): ?>
+  <li>Do you want more books?</li>
+  <?php endif; ?>
+  <?php endforeach; ?>
+</ul>
+<?php endif; ?>
+
+<?php // PropelModelPager offers a convenient API to display pagination controls ?>
+<?php if($bookPager->haveToPaginate()): ?>
+  <p>Page <?php echo $bookPager->getPage() ?> of <?php echo $bookPager->getLastPage() ?></p>
+  <p>
+  	Displaying results <?php echo $bookPager->getFirstIndex() ?> to <?php echo $bookPager->getLastIndex() ?>
+  	on a total of <?php echo $bookPager->getNbResults() ?>
+	</p>
+<?php endif; ?>
+}}}
 
 === Using An Alternative Formatter ===
 

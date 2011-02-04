@@ -8,7 +8,7 @@
  * @license    MIT License
  */
 
-require_once 'PHPUnit/Framework/TestCase.php';
+require_once 'PHPUnit/Framework.php';
 
 /**
  * Tests the table structure behavior hooks.
@@ -21,7 +21,7 @@ class TableBehaviorTest extends PHPUnit_Framework_TestCase
 	protected function setUp()
 	{
 		parent::setUp();
-		set_include_path(get_include_path() . PATH_SEPARATOR . "fixtures/bookstore/build/classes");		
+		set_include_path(get_include_path() . PATH_SEPARATOR . "fixtures/bookstore/build/classes");
 		require_once 'behavior/alternative_coding_standards/map/Table3TableMap.php';
 		require_once 'behavior/alternative_coding_standards/Table3Peer.php';
 	}
