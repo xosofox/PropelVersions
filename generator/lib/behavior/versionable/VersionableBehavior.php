@@ -17,7 +17,7 @@ require_once dirname(__FILE__) . '/VersionableBehaviorPeerBuilderModifier.php';
  * Keeps tracks of all the modifications in an ActiveRecord object
  *
  * @author    Francois Zaninotto
- * @version		$Revision: 2153 $
+ * @version		$Revision: 2188 $
  * @package		propel.generator.behavior.versionable
  */
 class VersionableBehavior extends Behavior
@@ -97,6 +97,10 @@ class VersionableBehavior extends Behavior
 				'schema'    => $table->getSchema(),
 				'namespace' => $table->getNamespace(),
 			));
+			// every behavior adding a table should re-execute database behaviors
+			foreach ($database->getBehaviors() as $behavior) {
+				$behavior->modifyDatabase();
+			}
 			// copy all the columns
 			foreach ($table->getColumns() as $column) {
 				$columnInVersionTable = clone $column;
