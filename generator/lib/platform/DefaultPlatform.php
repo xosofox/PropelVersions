@@ -18,7 +18,7 @@ require_once dirname(__FILE__) . '/../model/PropelTypes.php';
  * Default implementation for the Platform interface.
  *
  * @author     Martin Poeschl <mpoeschl@marmot.at> (Torque)
- * @version    $Revision: 2180 $
+ * @version    $Revision: 2194 $
  * @package    propel.generator.platform
  */
 class DefaultPlatform implements PropelPlatformInterface
@@ -556,6 +556,9 @@ DROP INDEX %s;
 	 */
 	public function getAddForeignKeyDDL(ForeignKey $fk)
 	{
+		if ($fk->isSkipSql()) {
+			return;
+		}
 		$pattern = "
 ALTER TABLE %s ADD %s;
 ";
@@ -573,6 +576,9 @@ ALTER TABLE %s ADD %s;
 	 */
 	public function getDropForeignKeyDDL(ForeignKey $fk)
 	{
+		if ($fk->isSkipSql()) {
+			return;
+		}
 		$pattern = "
 ALTER TABLE %s DROP CONSTRAINT %s;
 ";
@@ -588,6 +594,9 @@ ALTER TABLE %s DROP CONSTRAINT %s;
 	 */	
 	public function getForeignKeyDDL(ForeignKey $fk)
 	{
+		if ($fk->isSkipSql()) {
+			return;
+		}
 		$pattern = "CONSTRAINT %s
 	FOREIGN KEY (%s)
 	REFERENCES %s (%s)";

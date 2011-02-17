@@ -16,7 +16,7 @@ require_once dirname(__FILE__) . '/../model/Domain.php';
  *
  * @author     Hans Lellelid <hans@xmpl.org> (Propel)
  * @author     Martin Poeschl <mpoeschl@marmot.at> (Torque)
- * @version    $Revision: 2090 $
+ * @version    $Revision: 2194 $
  * @package    propel.generator.platform
  */
 class MssqlPlatform extends DefaultPlatform
@@ -122,6 +122,9 @@ END
 
 	public function getAddForeignKeyDDL(ForeignKey $fk)
 	{
+		if ($fk->isSkipSql()) {
+			return;
+		}
 		$pattern = "
 BEGIN
 ALTER TABLE %s ADD %s
@@ -136,6 +139,9 @@ END
 
 	public function getForeignKeyDDL(ForeignKey $fk)
 	{
+		if ($fk->isSkipSql()) {
+			return;
+		}
 		$pattern = 'CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s (%s)';
 		$script = sprintf($pattern,
 			$this->quoteIdentifier($fk->getName()),

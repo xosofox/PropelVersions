@@ -29,7 +29,7 @@ require_once dirname(__FILE__) . '/Behavior.php';
  * @author     John McNally <jmcnally@collab.net> (Torque)
  * @author     Daniel Rall <dlr@collab.net> (Torque)
  * @author     Byron Foster <byron_foster@yahoo.com> (Torque)
- * @version    $Revision: 2168 $
+ * @version    $Revision: 2193 $
  * @package    propel.generator.model
  */
 class Table extends ScopedElement implements IDMethod
@@ -729,10 +729,10 @@ class Table extends ScopedElement implements IDMethod
 	
 	public function adjustColumnPositions()
 	{
+		$this->columnList = array_values($this->columnList);
 		$columnCount = $this->getNumColumns();
-		$columnListKeys = array_keys($this->columnList);
 		for ($i=0; $i < $columnCount; $i++) {
-			$this->columnList[$columnListKeys[$i]]->setPosition($i + 1);
+			$this->columnList[$i]->setPosition($i + 1);
 		}
 	}
 	

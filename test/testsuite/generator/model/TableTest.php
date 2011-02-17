@@ -1,7 +1,7 @@
 <?php
 
 /*
- *	$Id: TableTest.php 2128 2011-01-04 17:52:35Z francois $
+ *	$Id: TableTest.php 2193 2011-02-16 12:35:36Z francois $
  * This file is part of the Propel package.
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -19,7 +19,7 @@ require_once dirname(__FILE__) . '/../../../tools/helpers/DummyPlatforms.php';
  * Tests for Table model class
  *
  * @author     Martin Poeschl (mpoeschl@marmot.at)
- * @version    $Revision: 2128 $
+ * @version    $Revision: 2193 $
  * @package    generator.model
  */
 class TableTest extends PHPUnit_Framework_TestCase
@@ -203,10 +203,29 @@ EOF;
 	/**
 	 * @dataProvider providerForTestHasColumn
 	 */
-	public function testRemoveColumnFromNAme($table, $column)
+	public function testRemoveColumnFromName($table, $column)
 	{
 		$table->removeColumn($column->getName());
 		$this->assertFalse($table->hasColumn('Foo'));
+	}
+	
+	public function testRemoveColumnFixesPositions()
+	{
+		$table = new Table();
+		$col1 = new Column('Foo1');
+		$table->addColumn($col1);
+		$col2 = new Column('Foo2');
+		$table->addColumn($col2);
+		$col3 = new Column('Foo3');
+		$table->addColumn($col3);
+		$this->assertEquals(1, $col1->getPosition());
+		$this->assertEquals(2, $col2->getPosition());
+		$this->assertEquals(3, $col3->getPosition());
+		$this->assertEquals(array(0, 1, 2), array_keys($table->getColumns()));
+		$table->removeColumn($col2);
+		$this->assertEquals(1, $col1->getPosition());
+		$this->assertEquals(2, $col3->getPosition());
+		$this->assertEquals(array(0, 1), array_keys($table->getColumns()));
 	}
 
 	public function testQualifiedName()

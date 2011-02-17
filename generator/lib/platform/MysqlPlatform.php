@@ -15,7 +15,7 @@ require_once dirname(__FILE__) . '/DefaultPlatform.php';
  *
  * @author     Hans Lellelid <hans@xmpl.org> (Propel)
  * @author     Martin Poeschl <mpoeschl@marmot.at> (Torque)
- * @version    $Revision: 2094 $
+ * @version    $Revision: 2194 $
  * @package    propel.generator.platform
  */
 class MysqlPlatform extends DefaultPlatform
@@ -153,6 +153,9 @@ SET FOREIGN_KEY_CHECKS = 1;
 		}
 
 		foreach ($table->getForeignKeys() as $foreignKey) {
+			if ($foreignKey->isSkipSql()) {
+				continue;
+			}
 			$lines[] = str_replace("
 	", "
 		", $this->getForeignKeyDDL($foreignKey));
@@ -397,6 +400,9 @@ DROP INDEX %s ON %s;
 
 	public function getDropForeignKeyDDL(ForeignKey $fk)
 	{
+		if ($fk->isSkipSql()) {
+			return;
+		}
 		$pattern = "
 ALTER TABLE %s DROP FOREIGN KEY %s;
 ";

@@ -16,7 +16,7 @@ require_once dirname(__FILE__) . '/DefaultPlatform.php';
  * @author     Hans Lellelid <hans@xmpl.org> (Propel)
  * @author     Martin Poeschl <mpoeschl@marmot.at> (Torque)
  * @author     Denis Dalmais
- * @version    $Revision: 2185 $
+ * @version    $Revision: 2194 $
  * @package    propel.generator.platform
  */
 class OraclePlatform extends DefaultPlatform
@@ -200,6 +200,9 @@ DROP SEQUENCE " . $this->quoteIdentifier($this->getSequenceName($table)) . ";
 
 	public function getForeignKeyDDL(ForeignKey $fk)
 	{
+		if ($fk->isSkipSql()) {
+			return;
+		}
 		$pattern = "CONSTRAINT %s
 	FOREIGN KEY (%s) REFERENCES %s (%s)";
 		$script = sprintf($pattern,
