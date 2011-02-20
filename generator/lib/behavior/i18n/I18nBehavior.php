@@ -16,7 +16,7 @@ require_once dirname(__FILE__) . '/I18nBehaviorPeerBuilderModifier.php';
  * Allows translation of text columns through transparent one-to-many relationship
  *
  * @author    Francois Zaninotto
- * @version		$Revision: 2188 $
+ * @version		$Revision: 2199 $
  * @package		propel.generator.behavior.i18n
  */
 class I18nBehavior extends Behavior
@@ -206,9 +206,20 @@ class I18nBehavior extends Behavior
 	public function getI18nColumns()
 	{
 		$columns = array();
-		foreach ($this->getI18nTable()->getColumns() as $column) {
-			if (!$column->isPrimaryKey()) {
-				$columns []= $column;
+		$i18nTable = $this->getI18nTable();
+		if ($columnNames = $this->getI18nColumnNamesFromConfig()) {
+			// Strategy 1: use the i18n_columns parameter
+			foreach ($columnNames as $columnName) {
+				$columns []= $i18nTable->getColumn($columnName);
+			}
+		} else {
+			// strategy 2: use the columns of the i18n table
+			// warning: does not work when database behaviors add columns to all tables
+			// (such as timestampable behavior)
+			foreach ($i18nTable->getColumns() as $column) {
+				if (!$column->isPrimaryKey()) {
+					$columns []= $column;
+				}
 			}
 		}
 		
