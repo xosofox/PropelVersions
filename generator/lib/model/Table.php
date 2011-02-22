@@ -29,7 +29,7 @@ require_once dirname(__FILE__) . '/Behavior.php';
  * @author     John McNally <jmcnally@collab.net> (Torque)
  * @author     Daniel Rall <dlr@collab.net> (Torque)
  * @author     Byron Foster <byron_foster@yahoo.com> (Torque)
- * @version    $Revision: 2193 $
+ * @version    $Revision: 2202 $
  * @package    propel.generator.model
  */
 class Table extends ScopedElement implements IDMethod
@@ -765,6 +765,20 @@ class Table extends ScopedElement implements IDMethod
 			$validator->setTable($this);
 			$validator->loadFromXML($data);
 			return $this->addValidator($validator);
+		}
+	}
+	
+	/**
+	 * Removes validators based on a column name
+	 *
+	 * @param string the name of the column bearing a validator
+	 */
+	public function removeValidatorForColumn($columnName)
+	{
+		foreach ($this->validatorList as $key => $validator) {
+			if ($validator->getColumnName() == $columnName) {
+				unset($this->validatorList[$key]);
+			}
 		}
 	}
 

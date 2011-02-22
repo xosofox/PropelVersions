@@ -1,7 +1,7 @@
 <?php
 
 /*
- *	$Id: TableTest.php 2193 2011-02-16 12:35:36Z francois $
+ *	$Id: TableTest.php 2202 2011-02-21 21:30:57Z francois $
  * This file is part of the Propel package.
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -19,7 +19,7 @@ require_once dirname(__FILE__) . '/../../../tools/helpers/DummyPlatforms.php';
  * Tests for Table model class
  *
  * @author     Martin Poeschl (mpoeschl@marmot.at)
- * @version    $Revision: 2193 $
+ * @version    $Revision: 2202 $
  * @package    generator.model
  */
 class TableTest extends PHPUnit_Framework_TestCase
@@ -241,6 +241,28 @@ EOF;
 		$this->assertEquals($table->getName(), "bar");
 		$database->setPlatform(new SchemaPlatform());
 		$this->assertEquals($table->getName(), "foo.bar");
+	}
+
+	public function testRemoveValidatorForColumn()
+	{
+		$xmlToAppData = new XmlToAppData(new DefaultPlatform());
+		$schema = <<<EOF
+<database name="test">
+  <table name="table1">
+    <column name="id" primaryKey="true" />
+    <column name="title1" type="VARCHAR" />
+    <validator column="title1">
+      <rule name="minLength" value="4" message="Username must be at least 4 characters !" />
+    </validator>
+  </table>
+</database>
+EOF;
+		$appData = $xmlToAppData->parseString($schema);
+		$table1 = $appData->getDatabase('test')->getTable('table1');
+		$title1Column = $table1->getColumn('title1');
+		$this->assertNotNull($title1Column->getValidator());
+		$table1->removeValidatorForColumn('title1');
+		$this->assertNull($title1Column->getValidator());
 	}
 
 }

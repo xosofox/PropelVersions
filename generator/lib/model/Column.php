@@ -25,7 +25,7 @@ require_once dirname(__FILE__) . '/ColumnDefaultValue.php';
  * @author     Daniel Rall <dlr@finemaltcoding.com> (Torque)
  * @author     Byron Foster <byron_foster@yahoo.com> (Torque)
  * @author     Bernd Goldschmidt <bgoldschmidt@rapidsoft.de>
- * @version    $Revision: 2180 $
+ * @version    $Revision: 2202 $
  * @package    propel.generator.model
  */
 class Column extends XMLElement
@@ -1248,6 +1248,15 @@ class Column extends XMLElement
 	public function getPlatform()
 	{
 		return $this->getTable()->getDatabase()->getPlatform();
+	}
+	
+	public function getValidator()
+	{
+		foreach ($this->getTable()->getValidators() as $validator) {
+			if ($validator->getColumn() == $this) {
+				return $validator;
+			}
+		}
 	}
 
 	public static function generatePhpName($name, $phpNamingMethod = PhpNameGenerator::CONV_METHOD_CLEAN, $namePrefix = null) {
