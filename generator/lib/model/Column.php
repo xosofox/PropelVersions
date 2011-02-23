@@ -25,7 +25,7 @@ require_once dirname(__FILE__) . '/ColumnDefaultValue.php';
  * @author     Daniel Rall <dlr@finemaltcoding.com> (Torque)
  * @author     Byron Foster <byron_foster@yahoo.com> (Torque)
  * @author     Bernd Goldschmidt <bgoldschmidt@rapidsoft.de>
- * @version    $Revision: 2202 $
+ * @version    $Revision: 2209 $
  * @package    propel.generator.model
  */
 class Column extends XMLElement
@@ -86,9 +86,6 @@ class Column extends XMLElement
 	private $isEnumeratedClasses;
 	private $inheritanceList;
 	private $needsTransactionInPostgres; //maybe this can be retrieved from vendorSpecificInfo
-
-	/** class name to do input validation on this column */
-	private $inputValidator = null;
 	
 	/**
 	 * @var stores the possible values of an ENUM column
@@ -242,7 +239,6 @@ class Column extends XMLElement
 			&& $this->inheritanceType !== "false"); // here we are only checking for 'false', so don't
 			// use boleanValue()
 
-			$this->inputValidator = $this->getAttribute("inputValidator");
 			$this->description = $this->getAttribute("description");
 		} catch (Exception $e) {
 			throw new EngineException("Error setting up column " . var_export($this->getAttribute("name"), true) . ": " . $e->getMessage());
@@ -1114,14 +1110,6 @@ class Column extends XMLElement
 	}
 
 	/**
-	 * Returns the class name to do input validation
-	 */
-	public function getInputValidator()
-	{
-		return $this->inputValidator;
-	}
-
-	/**
 	 * Return auto increment/sequence string for the target database. We need to
 	 * pass in the props for the target database!
 	 */
@@ -1258,7 +1246,12 @@ class Column extends XMLElement
 			}
 		}
 	}
-
+	
+	public function __clone()
+	{
+		$this->referrers = null;
+	}
+	
 	public static function generatePhpName($name, $phpNamingMethod = PhpNameGenerator::CONV_METHOD_CLEAN, $namePrefix = null) {
 		return NameFactory::generateName(NameFactory::PHP_GENERATOR, array($name, $phpNamingMethod, $namePrefix));
 	}
