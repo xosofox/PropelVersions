@@ -18,7 +18,7 @@ require_once dirname(__FILE__) . '/Database.php';
  * @author     Leon Messerschmidt <leon@opticode.co.za> (Torque)
  * @author     John McNally <jmcnally@collab.net> (Torque)
  * @author     Daniel Rall <dlr@finemaltcoding.com> (Torque)
- * @version    $Revision: 2090 $
+ * @version    $Revision: 2215 $
  * @package    propel.generator.model
  */
 class AppData
@@ -259,7 +259,7 @@ class AppData
 					// join tables
 					foreach ($addDb->getTables() as $addTable) {
 						if ($db->getTable($addTable->getName())) {
-							throw new Exception(sprintf('Duplicate table found: %s.', $addDbName));
+							throw new Exception(sprintf('Duplicate table found: %s.', $addTable->getName()));
 						}
 						$db->addTable($addTable);
 					}
