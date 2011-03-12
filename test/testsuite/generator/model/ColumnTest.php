@@ -12,12 +12,13 @@ require_once 'PHPUnit/Framework.php';
 require_once dirname(__FILE__) . '/../../../../generator/lib/model/Column.php';
 require_once dirname(__FILE__) . '/../../../../generator/lib/builder/util/XmlToAppData.php';
 require_once dirname(__FILE__) . '/../../../../generator/lib/platform/DefaultPlatform.php';
+require_once dirname(__FILE__) . '/../../../../generator/lib/behavior/AutoAddPkBehavior.php';
 
 /**
  * Tests for package handling.
  *
  * @author     <a href="mailto:mpoeschl@marmot.at>Martin Poeschl</a>
- * @version    $Revision: 2202 $
+ * @version    $Revision: 2221 $
  * @package    generator.model
  */
 class ColumnTest extends PHPUnit_Framework_TestCase
