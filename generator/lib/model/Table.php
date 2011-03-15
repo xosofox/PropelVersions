@@ -29,7 +29,7 @@ require_once dirname(__FILE__) . '/Behavior.php';
  * @author     John McNally <jmcnally@collab.net> (Torque)
  * @author     Daniel Rall <dlr@collab.net> (Torque)
  * @author     Byron Foster <byron_foster@yahoo.com> (Torque)
- * @version    $Revision: 2202 $
+ * @version    $Revision: 2227 $
  * @package    propel.generator.model
  */
 class Table extends ScopedElement implements IDMethod
@@ -1704,7 +1704,11 @@ class Table extends ScopedElement implements IDMethod
 		$doc = ($node instanceof DOMDocument) ? $node : $node->ownerDocument;
 
 		$tableNode = $node->appendChild($doc->createElement('table'));
-		$tableNode->setAttribute('name', $this->getName());
+		$tableNode->setAttribute('name', $this->getCommonName());
+
+		if ($this->getSchema() !== null) {
+			$tableNode->setAttribute('schema', $this->getSchema());
+		}
 
 		if ($this->phpName !== null) {
 			$tableNode->setAttribute('phpName', $this->phpName);
