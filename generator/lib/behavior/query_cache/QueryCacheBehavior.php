@@ -12,7 +12,7 @@
  * Speeds up queries on a model by caching the query
  *
  * @author     François Zaninotto
- * @version    $Revision: 2178 $
+ * @version    $Revision: 2232 $
  * @package    propel.generator.behavior.cacheable
  */
 class QueryCacheBehavior extends Behavior
@@ -167,9 +167,11 @@ protected function getSelectStatement(\$con = null)
 		\$con = Propel::getConnection(" . $this->peerClassname ."::DATABASE_NAME, Propel::CONNECTION_READ);
 	}
 	
-	if (!\$this->hasSelectClause()) {
+	if (!\$this->hasSelectClause() && !\$this->getPrimaryCriteria()) {
 		\$this->addSelfSelectColumns();
 	}
+	
+	\$this->configureSelectColumns();
 	
 	\$con->beginTransaction();
 	try {
