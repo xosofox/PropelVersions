@@ -16,7 +16,7 @@ require_once dirname(__FILE__) . '/../exception/EngineException.php';
  *
  * @author     Jason van Zyl <vanzyl@apache.org>
  * @author     Daniel Rall <dlr@finemaltcoding.com>
- * @version    $Revision: 2090 $
+ * @version    $Revision: 2236 $
  * @package    propel.generator.model
  */
 class Index extends XMLElement
@@ -219,6 +219,14 @@ class Index extends XMLElement
 			return $this->indexColumnSizes[$name];
 		}
 		return null; // just to be explicit
+	}
+	
+	/**
+	 * Reset the column sizes. Useful for generated indices for FKs
+	 */
+	public function resetColumnSize()
+	{
+		$this->indexColumnSizes = array();
 	}
 
 	/**
