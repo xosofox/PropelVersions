@@ -1,0 +1,132 @@
+<!--
+-File         $Id: ColumnTypes.html,v 1.1 2004/07/08 01:17:06 hlellelid Exp $
+-License      GNU FDL (http://www.gnu.org/copyleft/fdl.html)
+-Copyright    2003, Propel project
+-Author       Hans Lellelid, hans@xmpl.org
+-->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/2000/REC-xhtml1-20000126/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <title>Propel Guide</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+  <link rel="Stylesheet" rev="Stylesheet" href="../css/Documentation.css" type="text/css" charset="iso-8859-1"/>
+</head>
+<body>
+
+<h1>Typy Kolumn w Propelu </h1>
+
+<p>W tym rozdziale zapoznamy się z typami kolumn dostępnymi w Propelu. Typ kolumn, które wybierzesz, ma wpływ na kod SQL, który zostanie wygenerowany dla Twojej bazy danych oraz w niektórych wypadkach, na zachowanie wygenerowanych klas. Typy kolumn Propela są odzwierciedleniem tych dostępnych w Creole - warstwie abstrakcji bazy danych używanej przez Propel. Z kolei Creole bazuje na uproszczonej wersji typów JDBC.</p>
+<p>Generator Propela przekształca domyślne typy kolumn Propela na natywne typy kolumn twojej bazy danych (RDBMS). Klasy Modelu Obiektowego (OM) i środowisko uruchomieniowe Propel upewniają się, że dane są poprawinie przekształcone, więc kod je użytkujący nie musi martwić się tym, na jakiej bazie obecnie pracuje.</p>
+<h2><a name="ColumnTypes.Boolean"></a>Booleanowskie Typy Kolumn </h2>
+<p>Jest tylko jeden typ BOOLEAN w Propelu:</p>
+<ul>
+  <li>BOOLEAN</li>
+</ul>
+<p>Typ ten reprezentuje wartości TRUE/FALSE. W bazach, które nie posiadają natywnego typu BOOLEAN/BIT, zostanie użyty INTEGER lub SMALLINT (0=false, 1=true).</p>
+<pre title="Boolean column XML declaration">&lt;table name=&quot;bool_test&quot;&gt;
+  &lt;column name=&quot;boolval&quot; type=&quot;BOOLEAN&quot; defaultValue=&quot;true&quot;/&gt;
+&lt;/table&gt;</pre>
+<p>W PostgreSQL wygeneruje to:</p>
+<pre title="Boolean column table creation SQL">CREATE TABLE bool_test (
+  boolval bit NOT NULL default 't'
+);</pre>
+
+<p>Metody dostępowe w klasach OM (np. <strong>getBoolval()</strong>) zawsze zwracają wartość boolean - niezależnie od rodzaju bazy danych.</p>
+<h2><a name="ColumnTypes.Numeric"></a>Numeryczne Typy Kolumn </h2>
+
+<p>Dostępnych jest kilka typów numerycznych:</p>
+<ul>
+  <li>TINYINT</li>
+  <li>INTEGER</li>
+  <li>BIGINT</li>
+  <li>DOUBLE</li>
+  <li>DECIMAL</li>
+  <li>FLOAT</li>
+  <li>REAL</li>
+</ul>
+<p>Możesz użyć atrybutów <strong>scale</strong> i <strong>size</strong> dla odpowiednich typów kolumn, ale to, czy jednak zostaną dołączone do wygenerowanych plików SQL zależy od typu Twojej bazy danych.</p>
+<pre title="Numeric column XML declaration">&lt;table name=&quot;num_test&quot;&gt;
+  &lt;column name=&quot;num&quot; type=&quot;FLOAT&quot; size=&quot;10&quot; scale=&quot;2&quot;/&gt;
+&lt;/table&gt;</pre>
+<p>Dla MySQL powyższy kod wygeneruje:</p>
+<pre title="Numeric column table creation SQL">CREATE TABLE num_test (
+  num FLOAT(10,2) NOT NULL
+) Type=MyISAM;</pre>
+
+<p>Typy numeryczne wpływają na generowany kod SQL, ale nie na kod klas OM.</p>
+<p>Zwróć uwagę, że możesz w swojej bazie danych przechowywać liczby o większej precyzji niż może obsłużyć PHP. Sprawdź ustawienia prezyzji (<em>precision</em>) w pliku <tt>php.ini</tt>, jeśli napotkasz ten problem.</p>
+  
+  
+<h2><a name="ColumnTypes.String"></a>Kolumny Typu String (ciągi znaków)</h2>
+  
+<p>Jest kilka typów string w Propelu:</p>
+<ul>
+  <li>CHAR</li>
+  <li>VARCHAR</li>
+  <li>LONGVARCHAR</li>
+</ul>
+<p>Kolumny tych typów są konwertowane do tych wspieranych przez bazę danych. CHAR reprezentuje ciągi znakowe o niezmiennej długości, podczas gdy VARCHAR potrafi tą wielkość rozróżniać. Dla obu typów możesz zastosować atrybut <strong>size</strong>. Generalnie atrybut <strong>size</strong> dla typu LONGVARCHAR zostanie zignorowany. Niektóre bazy danych (np. MySQL, PostgreSQL, MS SQL Server) używają typu TEXT zamiast LONGVARCHAR.</p>
+<p>Kolumny tych typów zawsze zawierają wartości będące ciągami znaków i jako takie będą zwracane. Warto zauważyć, że zwracane wartości są zawsze pozbawione tzw. whitespaces. Niektóre bazy danych (np. MySQL) robią to automatycznie, inne nie (np. PostgreSQL).</p>
+<h2><a name="ColumnTypes.LOB"></a>Kolumny Typu LOB</h2>
+<p>LOB to skrót od <strong>L</strong>ocator <strong>OB</strong>ject. W Propelu istnieją dwa typy kolumn LOB:</p>
+<ul>
+  <li>CLOB</li>
+  <li>BLOB</li>
+</ul>
+<p>Typy te zasługują na szczególną uwagę, ponieważ są traktowane trochę inaczej niż inne typy w Propelu. Wyniki dla typów LOB są zwracane jako obiekty typu <strong>creole.util.Blob</strong> lub <strong>creole.util.Clob</strong>. Te klasy dostarczają kilku użytecznych metod (np.  pozwalających zapisać do pliku, lub do bufora). Dodatkowo implementują metodę <strong>__toString()</strong>, więc kod użytkujący może zignorować obiekty.
+<em>Uwaga: W PHP5.0.0RC1 automatyczne wywołanie metody <strong>__toString()</strong> zostało wyłączone. Od teraz musisz jawnie wywołać metodę <strong>__toSring()</strong> wybranego obiektu.</em></p>
+<p>Spójrz na poniższy przykład:</p>
+<pre title="LOB column declaration">&lt;table name=&quot;lob_test&quot;&gt;
+  &lt;column name=&quot;photo&quot; type=&quot;BLOB&quot;/&gt;
+&lt;/table&gt;</pre>
+<p>Teraz w php jawnie wywołujemy metodę <strong>__toSring()</strong></p>
+<pre title="Retrieving contents of LOB column">$lob = LobTestPeer::doSelectOne(new Criteria());
+$bits = $lob-&gt;getPhoto()->__toString(); // yuk, we know; convince php devs to restore automatic __toString()</pre>
+<p>albo wywołujemy metodę<strong>Lob::getContents()</strong> bezpośrednio:</p>
+<pre title="Explicitly retrieving LOB contents">$bits = $lob-&gt;getPhoto()-&gt;getContents();
+</pre>
+<p>albo wykorzystujemy zaawansowane możliwości i zapisujemy obiekt do pliku:</p>
+<pre title="Writing LOB contents to file">$lob-&gt;getPhoto()-&gt;writeToFile('/tmp/photo.gif');
+</pre>
+<p>albo zrzucamy zawartość do bufora:</p>
+<pre title="Dumping LOB contents">$lob-&gt;getPhoto()-&gt;dump();
+</pre>
+<h2><a name="ColumnTypes.DateTime"></a>Kolumny Typu Date i Time</h2>
+<p>W Propelu mamy następujące kolumny typu date i time:</p>
+<ul>
+  <li>DATE</li>
+  <li>TIME</li>
+  <li>TIMESTAMP</li>
+</ul>
+<p>Większość baz danych wspiera te typy. Warto zauważyć, że MySQL mapuje typ TIMESTAMP do DATETIME. Creole transformuje daty i czas do domyślnych wartości dla Twojej lokalizacji, wprowadzając spójność pomiędzy {backends} bazy danych.</p>
+<pre title="numeric column declaration">&lt;table name=&quot;date_test&quot;&gt;
+  &lt;column name=&quot;birth_date&quot; type=&quot;DATE&quot;/&gt;
+  &lt;column name=&quot;birth_time&quot; type=&quot;TIME&quot;/&gt;
+  &lt;column name=&quot;updated&quot; type=&quot;TIMESTAMP&quot;/&gt;
+&lt;/table&gt;</pre>
+<p>Poniższy kod PHP...</p>
+<pre title="numeric column declaration">print $obj-&gt;getBirthDate() . &quot;\n&quot;;
+print $obj-&gt;getBirthTime() . &quot;\n&quot;;
+print $obj-&gt;getUpdate() . &quot;\n&quot;;</pre>
+<p>Dla lokalizacji <strong>en_US</strong> spowoduje wyświetlenie:</p>
+<pre title="Output on system using en_US locale">03/02/1998
+12:34:23 AM
+2003-12-21 18:32:01
+</pre>
+<p>Dla <strong>de_DE</strong> będzie już inaczej:</p>
+<pre title="Output on system using de_DE locale">02.03.1998
+00:34:23
+2003-12-21 18:32:01</pre>
+<p>Zauważ, że użycie PHP'owej funkcji <strong>setlocale()</strong> zmieni zwracaną wartość (przez metody akcesory) dla kolumn typu TIME i DATE. Wartości kolumn TIMESTAMP są formatowane z użyciem kodowania ISO 8601 niezależnie od lokalizacji.</p>
+<h4>Formatowanie Daty </h4>
+<p>Możesz przekazać string formatujący do akcesorów kolumn date i time Możesz też przekazać NULL, aby wymusić zwrócenie unixowego znacznika czasu (timestamp).<br>
+Poniższy kod...</p>
+<pre title="passing date formatters">print $obj-&gt;getBirthDate('n/j') . &quot;\n&quot;;
+print $obj-&gt;getBirthTime('%X') . &quot;\n&quot;;
+print $obj-&gt;getUpdate(null) . &quot;\n&quot;;</pre>
+<p>...w systemie z lokalizacją en_US wypisze coś podobnego do poniższego kodu (Tylko wynik działania metody <strong>getBirthTime()</strong> będzie w tym przypadku inny, bo używa czułej na zmiany lokalizacji funkcji <strong>strftime()</strong>)</p>
+<pre title="Output using custom format strings">3/2
+12:34:23 AM
+1072049521</pre>
+</body>
+</html>
