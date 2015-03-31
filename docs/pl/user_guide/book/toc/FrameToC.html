@@ -1,0 +1,120 @@
+<!--
+-File         $Id$
+-License      GNU FDL (http://www.gnu.org/copyleft/fdl.html)
+-Copyright    2002, turing
+-Author       alex black, enigma@turingstudio.com
+-->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/2000/REC-xhtml1-20000126/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title> binarycloud contributor guide </title> 
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<link rel="Stylesheet" rev="Stylesheet" href="../css/FrameToc.css" type="text/css" media="All" charset="utf-8" />
+</head>
+<body>
+
+<ul>
+<li><a href="../chapters/AboutThisBook.html" target="Content">O Tej Książce</a></li>
+<ul>
+<li><a href="../chapters/AboutThisBook.html#Authors" target="Content">Autorzy</a></li>
+<li><a href="../chapters/AboutThisBook.html#CVS" target="Content">CVS</a></li>
+<li><a href="../chapters/AboutThisBook.html#Copyright" target="Content">Prawa Autorskie</a></li>
+<li><a href="../chapters/AboutThisBook.html#License" target="Content">Licencja</a></li>
+</ul>
+</ul>
+<ul>
+<li><a href="../chapters/Introduction.html" target="Content">Wprowadzenie</a></li>
+<ul>
+<li><a href="../chapters/Introduction.html#Introduction.What" target="Content">Co zapewnia Propel</a></li>
+<li><a href="../chapters/Introduction.html#Introduction.Approach" target="Content">Podejście</a></li>
+<li><a href="../chapters/Introduction.html#Introduction.Motivations" target="Content">Motywacje</a></li>
+<li><a href="../chapters/Introduction.html#Introduction.ShowMe" target="Content">Pokaż Mi, jak to działa!</a></li>
+</ul>
+</ul>
+<ul>
+<li><a href="../chapters/Installation.html" target="Content">Instalacja</a></li>
+<ul>
+<li><a href="../chapters/Installation.html#Installation.Prerequisites" target="Content">Wymagania Systemowe</a></li>
+<li><a href="../chapters/Installation.html#Installation.PEAR" target="Content">Instalacja poprzez PEAR</a></li>
+<li><a href="../chapters/Installation.html#Installation.Conventional" target="Content">Instalacja tradycyjna</a></li>
+</ul>
+</ul>
+<ul>
+<li><a href="../chapters/GettingStarted.html" target="Content">Początek</a></li>
+<ul>
+<li><a href="../chapters/GettingStarted.html#GettingStarted.Structure" target="Content">Struktura Generatora Propel</a></li>
+<li><a href="../chapters/GettingStarted.html#GettingStarted.XMLSchema" target="Content">Opisywanie Bazy Danych w XML</a></li>
+<li><a href="../chapters/GettingStarted.html#GettingStarted.BuildProps" target="Content">Konfigurowanie opcji kompilacji</a></li>
+<li><a href="../chapters/GettingStarted.html#GettingStarted.RuntimeProps" target="Content">Właściwości uruchomieniowe</a></li>
+<li><a href="../chapters/GettingStarted.html#GettingStarted.Building" target="Content">Kompilacja</a></li>
+<li><a href="../chapters/GettingStarted.html#GettingStarted.UsingSQL" target="Content">Użycie Plików SQL</a></li>
+<li><a href="../chapters/GettingStarted.html#GettingStarted.UsingOM" target="Content">Używanie Modelu obiektowego</a></li>
+</ul>
+</ul>
+<ul>
+<li><a href="../chapters/ManipulatingObjects.html" target="Content">Manipulowanie Obiektami</a></li>
+<ul>
+<li><a href="../chapters/ManipulatingObjects.html#ManipulatingObjects.Inserting" target="Content">Dodawanie Obiektów</a></li>
+<li><a href="../chapters/ManipulatingObjects.html#ManipulatingObjects.Updating" target="Content">Aktualizacja Obiektów</a></li>
+<li><a href="../chapters/ManipulatingObjects.html#ManipulatingObjects.Deleting" target="Content">Usuwanie Obiektów</a></li>
+</ul>
+</ul>
+<ul>
+<li><a href="../chapters/FindingObjects.html" target="Content">Pobieranie Utrwalonych Obiektów</a></li>
+<ul>
+<li><a href="../chapters/FindingObjects.html#FindingRecords.byPK" target="Content">Pobieranie Określonego Rekordu</a></li>
+<li><a href="../chapters/FindingObjects.html#FindingRecods.Criteria" target="Content">Pozyskiwanie Przy Użyciu Obiektu Criteria</a></li>
+<li><a href="../chapters/FindingObjects.html#WritingSQL" target="Content">Pobieranie Rekordów z Użyciem SQL</a></li>
+<li><a href="../chapters/FindingObjects.html#PopulatingSingleObjects" target="Content">Pobieranie Dużych Porcji Danych</a></li>
+</ul>
+</ul>
+<ul>
+<li><a href="../chapters/ColumnTypes.html" target="Content">Typy Kolumn w Propelu</a></li>
+<ul>
+<li><a href="../chapters/ColumnTypes.html#ColumnTypes.Boolean" target="Content">Booleanowskie Typy Kolumn</a></li>
+<li><a href="../chapters/ColumnTypes.html#ColumnTypes.Numeric" target="Content">Numeryczne Typy Kolumn</a></li>
+<li><a href="../chapters/ColumnTypes.html#ColumnTypes.String" target="Content">Kolumny Typu String (ciągi znaków)</a></li>
+<li><a href="../chapters/ColumnTypes.html#ColumnTypes.LOB" target="Content">Kolumny Typu LOB</a></li>
+<li><a href="../chapters/ColumnTypes.html#ColumnTypes.DateTime" target="Content">Kolumny Typu Date i Time</a></li>
+</ul>
+</ul>
+<ul>
+<li><a href="../chapters/Relationships.html" target="Content">Zależności</a></li>
+<ul>
+<li><a href="../chapters/Relationships.html#Relationships.Defining" target="Content">Definiowanie wpisów zależności</a></li>
+<li><a href="../chapters/Relationships.html#Relationships.FetchingRelated" target="Content">Pobieranie Zależnych Obiektów</a></li>
+<li><a href="../chapters/Relationships.html#Relationships.ManyToMany" target="Content">Zależności Wiele-do-Wielu</a></li>
+<li><a href="../chapters/Relationships.html#Relationships.CascadingDelete" target="Content">Usuwanie kaskadowe</a></li>
+</ul>
+</ul>
+<ul>
+<li><a href="../chapters/AdvancedObjectModel.html" target="Content">Zaawansowany Model Obiektów</a></li>
+<ul>
+<li><a href="../chapters/AdvancedObjectModel.html#AdvancedOM.OverridingBaseClasses" target="Content">Nadpisywanie Klass 'Base'</a></li>
+<li><a href="../chapters/AdvancedObjectModel.html#AdvancedOM.Inheritance" target="Content">Dziedziczenie</a></li>
+</ul>
+</ul>
+<ul>
+<li><a href="../chapters/appendices/AppendixA-PropelOperations.html" target="Content">Dodatek A - Operacje Propelas</a></li>
+<ul></ul>
+</ul>
+<ul>
+<li><a href="../chapters/appendices/AppendixB-SchemaReference.html" target="Content">Dodatek B - Schemat Definicji XML</a></li>
+<ul>
+<li><a href="../chapters/appendices/AppendixB-SchemaReference.html#AppendixB.Database" target="Content">Baza danych</a></li>
+<li><a href="../chapters/appendices/AppendixB-SchemaReference.html#AppendixB.ExternalSchema" target="Content">Zewnętrzny schemat</a></li>
+<li><a href="../chapters/appendices/AppendixB-SchemaReference.html#AppendixB.Table" target="Content">Tablica</a></li>
+<li><a href="../chapters/appendices/AppendixB-SchemaReference.html#AppendixB.Column" target="Content">Kolumna</a></li>
+<li><a href="../chapters/appendices/AppendixB-SchemaReference.html#AppendixB.ForeignKey" target="Content">Klucze Obce</a></li>
+<li><a href="../chapters/appendices/AppendixB-SchemaReference.html#AppendixB.Index" target="Content">Klucz Index</a></li>
+<li><a href="../chapters/appendices/AppendixB-SchemaReference.html#AppendixB.Unique" target="Content">Klucz Unikalny</a></li>
+</ul>
+</ul>
+<ul>
+<li><a href="../chapters/appendices/AppendixC-MapBuilders.html" target="Content">Dodatek C - Używanie klas MapBuilder</a></li>
+<ul></ul>
+</ul>
+
+</body>
+</html>
+<!-- $Id -->
